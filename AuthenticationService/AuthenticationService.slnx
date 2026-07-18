@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AuthenticationService.Api/AuthenticationService.Api.csproj" />
+    <Project Path="src/AuthenticationService.Application/AuthenticationService.Application.csproj" />
+    <Project Path="src/AuthenticationService.Domain/AuthenticationService.Domain.csproj" />
+    <Project Path="src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AuthenticationService.IntegrationTests/AuthenticationService.IntegrationTests.csproj" />
+    <Project Path="tests/AuthenticationService.UnitTests/AuthenticationService.UnitTests.csproj" />
+  </Folder>
+</Solution>

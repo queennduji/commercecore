@@ -1,0 +1,33 @@
+# CommerceCore
+
+Ecommerce microservices platform. Each service lives in its own top-level folder in this repo (one repo, one service per subfolder), built one service at a time.
+
+## Stack
+
+- .NET 10, Clean Architecture per service (Domain / Application / Infrastructure / Api), CQRS via MediatR
+- Confluent Kafka + Schema Registry (Avro) as the shared event bus — one broker/registry for the whole platform, each service owns its own topics
+- PostgreSQL, one database per service
+- Quartz.NET for background jobs
+
+## Services
+
+- [AuthenticationService](AuthenticationService/README.md) — Identity/Auth: JWT issuance, user registration/login, refresh token lifecycle
+
+## Local development
+
+Shared infra (Kafka + Schema Registry) is started once from the root, before starting any individual service:
+
+```bash
+docker compose up -d
+```
+
+Then follow the README in whichever service you're working on for its own database/run instructions.
+
+## Solution
+
+All services' projects are included in the root [commercecore.slnx](commercecore.slnx):
+
+```bash
+dotnet build commercecore.slnx
+dotnet test commercecore.slnx
+```

@@ -1,0 +1,24 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+
+## IDE
+.vs/
+.vscode/
+*.rider.json
+.idea/
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+*.trx
+coverage/
+
+## Docker volumes / local data
+postgres-data/
+kafka-data/
+
+## Postman VS Code extension local workspace state
+.postman/
+**/postman/globals/
