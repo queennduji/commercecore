@@ -1,14 +1,14 @@
 services:
-  auth-postgres:
+  catalog-postgres:
     image: postgres:16
     networks:
       - commercecore
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: authentication_service
+      POSTGRES_DB: catalog_service
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -17,22 +17,31 @@ services:
       timeout: 5s
       retries: 10
 
-  authentication-service:
+  catalog-service:
     build:
       context: .
       dockerfile: Dockerfile
     networks:
       - commercecore
     depends_on:
-      auth-postgres:
+      catalog-postgres:
         condition: service_healthy
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__AuthDatabase: "Host=auth-postgres;Port=5432;Database=authentication_service;Username=postgres;Password=postgres"
+      ConnectionStrings__CatalogDatabase: "Host=catalog-postgres;Port=5432;Database=catalog_service;Username=postgres;Password=postgres"
       Kafka__BootstrapServers: "kafka:29092"
       Kafka__SchemaRegistryUrl: "http://schema-registry:8081"
+      Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Minio__Endpoint: "minio:9000"
+      Minio__PublicBaseUrl: "localhost:9000"
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin"
+      Minio__BucketName: "catalog-product-images"
+      Minio__UseSSL: "false"
 
 networks:
   commercecore:

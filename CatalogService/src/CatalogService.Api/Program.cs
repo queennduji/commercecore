@@ -1,6 +1,6 @@
-using AuthenticationService.Api.ExceptionHandling;
-using AuthenticationService.Infrastructure;
-using AuthenticationService.Infrastructure.Options;
+using CatalogService.Api.ExceptionHandling;
+using CatalogService.Api.Options;
+using CatalogService.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;

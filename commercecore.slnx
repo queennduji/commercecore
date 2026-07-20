@@ -9,4 +9,14 @@
     <Project Path="AuthenticationService/tests/AuthenticationService.IntegrationTests/AuthenticationService.IntegrationTests.csproj" />
     <Project Path="AuthenticationService/tests/AuthenticationService.UnitTests/AuthenticationService.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/CatalogService/src/">
+    <Project Path="CatalogService/src/CatalogService.Api/CatalogService.Api.csproj" />
+    <Project Path="CatalogService/src/CatalogService.Application/CatalogService.Application.csproj" />
+    <Project Path="CatalogService/src/CatalogService.Domain/CatalogService.Domain.csproj" />
+    <Project Path="CatalogService/src/CatalogService.Infrastructure/CatalogService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/CatalogService/tests/">
+    <Project Path="CatalogService/tests/CatalogService.IntegrationTests/CatalogService.IntegrationTests.csproj" />
+    <Project Path="CatalogService/tests/CatalogService.UnitTests/CatalogService.UnitTests.csproj" />
+  </Folder>
 </Solution>
