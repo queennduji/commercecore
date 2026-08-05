@@ -13,15 +13,18 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
     private readonly IProductRepository _productRepository;
     private readonly IProductImageRepository _productImageRepository;
     private readonly IEventPublisher _eventPublisher;
+    private readonly ICacheService _cacheService;
 
     public UpdateProductCommandHandler(
         IProductRepository productRepository,
         IProductImageRepository productImageRepository,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
         _productImageRepository = productImageRepository;
         _eventPublisher = eventPublisher;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<ProductDto>> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
@@ -53,6 +56,9 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
 
         var images = await _productImageRepository.ListByProductIdsAsync([product.Id], cancellationToken);
         var imageDtos = images.Select(i => i.ToDto()).ToList();
+
+        await _cacheService.RemoveAsync(CacheKeys.Product(product.Id), cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.ProductListPrefix, cancellationToken);
 
         return ServiceResult<ProductDto>.Success(product.ToDto(imageDtos));
     }

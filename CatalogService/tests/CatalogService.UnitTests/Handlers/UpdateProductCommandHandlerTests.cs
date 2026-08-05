@@ -1,4 +1,5 @@
 using CatalogService.Application.Commands;
+using CatalogService.Application.Common;
 using CatalogService.Application.Handlers;
 using CatalogService.Application.Interfaces;
 using CatalogService.Domain.Entities;
@@ -9,11 +10,12 @@ namespace CatalogService.UnitTests.Handlers;
 public class UpdateProductCommandHandlerTests
 {
     [Fact]
-    public async Task Handle_ExistingProduct_UpdatesFieldsAndPublishesEvent()
+    public async Task Handle_ExistingProduct_UpdatesFieldsPublishesEventAndInvalidatesCache()
     {
         var productRepository = Substitute.For<IProductRepository>();
         var productImageRepository = Substitute.For<IProductImageRepository>();
         var eventPublisher = Substitute.For<IEventPublisher>();
+        var cacheService = Substitute.For<ICacheService>();
         var categoryId = Guid.NewGuid();
         var newCategoryId = Guid.NewGuid();
 
@@ -32,7 +34,7 @@ public class UpdateProductCommandHandlerTests
         productImageRepository.ListByProductIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Array.Empty<ProductImage>());
 
-        var handler = new UpdateProductCommandHandler(productRepository, productImageRepository, eventPublisher);
+        var handler = new UpdateProductCommandHandler(productRepository, productImageRepository, eventPublisher, cacheService);
         var command = new UpdateProductCommand(product.Id, "New Name", "Updated", 25m, ProductStatus.Active, newCategoryId);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -43,6 +45,8 @@ public class UpdateProductCommandHandlerTests
         Assert.Equal(ProductStatus.Active.ToString(), result.Value.Status);
         Assert.Equal(newCategoryId, result.Value.CategoryId);
         await eventPublisher.Received(1).PublishProductUpdatedAsync(Arg.Any<Domain.Events.ProductUpdatedEvent>(), Arg.Any<CancellationToken>());
+        await cacheService.Received(1).RemoveAsync(CacheKeys.Product(product.Id), Arg.Any<CancellationToken>());
+        await cacheService.Received(1).RemoveByPrefixAsync(CacheKeys.ProductListPrefix, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -51,9 +55,10 @@ public class UpdateProductCommandHandlerTests
         var productRepository = Substitute.For<IProductRepository>();
         var productImageRepository = Substitute.For<IProductImageRepository>();
         var eventPublisher = Substitute.For<IEventPublisher>();
+        var cacheService = Substitute.For<ICacheService>();
         productRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Product?)null);
 
-        var handler = new UpdateProductCommandHandler(productRepository, productImageRepository, eventPublisher);
+        var handler = new UpdateProductCommandHandler(productRepository, productImageRepository, eventPublisher, cacheService);
         var command = new UpdateProductCommand(Guid.NewGuid(), "Name", null, 10m, ProductStatus.Draft, Guid.NewGuid());
 
         var result = await handler.Handle(command, CancellationToken.None);

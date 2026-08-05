@@ -1,5 +1,6 @@
 using CatalogService.Application.Behaviors;
 using CatalogService.Application.Interfaces;
+using CatalogService.Infrastructure.Caching;
 using CatalogService.Infrastructure.Messaging;
 using CatalogService.Infrastructure.Options;
 using CatalogService.Infrastructure.Persistence;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Minio;
+using StackExchange.Redis;
 
 namespace CatalogService.Infrastructure;
 
@@ -21,6 +23,7 @@ public static class DependencyInjection
     {
         services.Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.SectionName));
         services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+        services.Configure<RedisOptions>(configuration.GetSection(RedisOptions.SectionName));
 
         services.AddDbContext<CatalogDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("CatalogDatabase")));
@@ -45,6 +48,16 @@ public static class DependencyInjection
         });
         services.AddScoped<IBlobStorageService, MinioBlobStorageService>();
         services.AddHostedService<MinioBucketInitializer>();
+
+        // Same lazy-binding reasoning as IMinioClient above: ConnectionMultiplexer.Connect performs
+        // an eager network connection, so it must be deferred to first resolution (post-.Build()),
+        // not called at AddInfrastructure-call-time.
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+            return ConnectionMultiplexer.Connect(redisOptions.ConnectionString);
+        });
+        services.AddScoped<ICacheService, RedisCacheService>();
 
         services.AddValidatorsFromAssembly(typeof(Application.Commands.CreateProductCommand).Assembly);
 

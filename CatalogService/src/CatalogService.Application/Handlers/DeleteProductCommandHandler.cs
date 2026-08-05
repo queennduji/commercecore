@@ -11,11 +11,13 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
 {
     private readonly IProductRepository _productRepository;
     private readonly IEventPublisher _eventPublisher;
+    private readonly ICacheService _cacheService;
 
-    public DeleteProductCommandHandler(IProductRepository productRepository, IEventPublisher eventPublisher)
+    public DeleteProductCommandHandler(IProductRepository productRepository, IEventPublisher eventPublisher, ICacheService cacheService)
     {
         _productRepository = productRepository;
         _eventPublisher = eventPublisher;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<bool>> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
@@ -36,6 +38,9 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
             ProductId = product.Id,
             DeletedAt = product.UpdatedAt
         }, cancellationToken);
+
+        await _cacheService.RemoveAsync(CacheKeys.Product(product.Id), cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.ProductListPrefix, cancellationToken);
 
         return ServiceResult<bool>.Success(true);
     }

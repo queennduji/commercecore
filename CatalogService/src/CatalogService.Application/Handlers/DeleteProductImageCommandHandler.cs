@@ -9,11 +9,16 @@ public class DeleteProductImageCommandHandler : IRequestHandler<DeleteProductIma
 {
     private readonly IProductImageRepository _productImageRepository;
     private readonly IBlobStorageService _blobStorageService;
+    private readonly ICacheService _cacheService;
 
-    public DeleteProductImageCommandHandler(IProductImageRepository productImageRepository, IBlobStorageService blobStorageService)
+    public DeleteProductImageCommandHandler(
+        IProductImageRepository productImageRepository,
+        IBlobStorageService blobStorageService,
+        ICacheService cacheService)
     {
         _productImageRepository = productImageRepository;
         _blobStorageService = blobStorageService;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<bool>> Handle(DeleteProductImageCommand request, CancellationToken cancellationToken)
@@ -28,6 +33,9 @@ public class DeleteProductImageCommandHandler : IRequestHandler<DeleteProductIma
         await _productImageRepository.SaveChangesAsync(cancellationToken);
 
         await _blobStorageService.DeleteAsync(image.ObjectKey, cancellationToken);
+
+        await _cacheService.RemoveAsync(CacheKeys.Product(image.ProductId), cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.ProductListPrefix, cancellationToken);
 
         return ServiceResult<bool>.Success(true);
     }

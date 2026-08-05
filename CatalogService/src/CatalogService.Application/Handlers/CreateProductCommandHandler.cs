@@ -13,11 +13,13 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
 {
     private readonly IProductRepository _productRepository;
     private readonly IEventPublisher _eventPublisher;
+    private readonly ICacheService _cacheService;
 
-    public CreateProductCommandHandler(IProductRepository productRepository, IEventPublisher eventPublisher)
+    public CreateProductCommandHandler(IProductRepository productRepository, IEventPublisher eventPublisher, ICacheService cacheService)
     {
         _productRepository = productRepository;
         _eventPublisher = eventPublisher;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<ProductDto>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
@@ -48,6 +50,8 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             CategoryId = product.CategoryId,
             CreatedAt = product.CreatedAt
         }, cancellationToken);
+
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.ProductListPrefix, cancellationToken);
 
         return ServiceResult<ProductDto>.Success(product.ToDto());
     }

@@ -13,15 +13,18 @@ public class AttachProductImageCommandHandler : IRequestHandler<AttachProductIma
     private readonly IProductRepository _productRepository;
     private readonly IProductImageRepository _productImageRepository;
     private readonly IBlobStorageService _blobStorageService;
+    private readonly ICacheService _cacheService;
 
     public AttachProductImageCommandHandler(
         IProductRepository productRepository,
         IProductImageRepository productImageRepository,
-        IBlobStorageService blobStorageService)
+        IBlobStorageService blobStorageService,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
         _productImageRepository = productImageRepository;
         _blobStorageService = blobStorageService;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<ProductImageDto>> Handle(AttachProductImageCommand request, CancellationToken cancellationToken)
@@ -47,6 +50,9 @@ public class AttachProductImageCommandHandler : IRequestHandler<AttachProductIma
 
         await _productImageRepository.AddAsync(image, cancellationToken);
         await _productImageRepository.SaveChangesAsync(cancellationToken);
+
+        await _cacheService.RemoveAsync(CacheKeys.Product(request.ProductId), cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.ProductListPrefix, cancellationToken);
 
         return ServiceResult<ProductImageDto>.Success(image.ToDto());
     }

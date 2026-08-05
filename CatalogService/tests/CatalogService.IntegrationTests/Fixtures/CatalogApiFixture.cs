@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.Kafka;
 using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
+using Testcontainers.Redis;
 using IContainer = DotNet.Testcontainers.Containers.IContainer;
 
 namespace CatalogService.IntegrationTests.Fixtures;
@@ -28,6 +29,7 @@ public class CatalogApiFixture : IAsyncLifetime
     private KafkaContainer _kafka = null!;
     private IContainer _schemaRegistry = null!;
     private MinioContainer _minio = null!;
+    private RedisContainer _redis = null!;
 
     public WebApplicationFactory<Program> Factory { get; private set; } = null!;
     public string MinioPublicEndpoint { get; private set; } = string.Empty;
@@ -68,7 +70,8 @@ public class CatalogApiFixture : IAsyncLifetime
         await WaitForSchemaRegistryAsync();
 
         _minio = new MinioBuilder("minio/minio:RELEASE.2025-09-07T16-13-09Z").Build();
-        await _minio.StartAsync();
+        _redis = new RedisBuilder("redis:8.8.0").Build();
+        await Task.WhenAll(_minio.StartAsync(), _redis.StartAsync());
 
         // The test host (WebApplicationFactory) and this test class both run on the same
         // machine as the test process, not inside a container, so there's no internal-vs-public
@@ -96,7 +99,9 @@ public class CatalogApiFixture : IAsyncLifetime
                     ["Minio:AccessKey"] = MinioAccessKey,
                     ["Minio:SecretKey"] = MinioSecretKey,
                     ["Minio:BucketName"] = "catalog-product-images-test",
-                    ["Minio:UseSSL"] = "false"
+                    ["Minio:UseSSL"] = "false",
+                    ["Redis:ConnectionString"] = _redis.GetConnectionString(),
+                    ["Redis:DefaultTtlSeconds"] = "300"
                 });
             });
         });
@@ -143,6 +148,7 @@ public class CatalogApiFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await Factory.DisposeAsync();
+        await _redis.DisposeAsync();
         await _minio.DisposeAsync();
         await _schemaRegistry.DisposeAsync();
         await _kafka.DisposeAsync();

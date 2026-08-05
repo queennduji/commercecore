@@ -57,6 +57,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:8.8.0
+    networks:
+      - commercecore
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 networks:
   commercecore:
     name: commercecore
@@ -64,3 +78,4 @@ networks:
 volumes:
   kafka-data:
   minio-data:
+  redis-data:

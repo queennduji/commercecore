@@ -1,4 +1,5 @@
 using CatalogService.Application.Commands;
+using CatalogService.Application.Common;
 using CatalogService.Application.Handlers;
 using CatalogService.Application.Interfaces;
 using CatalogService.Domain.Entities;
@@ -14,7 +15,8 @@ public class CreateProductCommandHandlerTests
     {
         var productRepository = Substitute.For<IProductRepository>();
         var eventPublisher = Substitute.For<IEventPublisher>();
-        var handler = new CreateProductCommandHandler(productRepository, eventPublisher);
+        var cacheService = Substitute.For<ICacheService>();
+        var handler = new CreateProductCommandHandler(productRepository, eventPublisher, cacheService);
         var categoryId = Guid.NewGuid();
 
         var command = new CreateProductCommand("Widget", "A widget", "SKU-001", 19.99m, categoryId);
@@ -31,5 +33,6 @@ public class CreateProductCommandHandlerTests
         await eventPublisher.Received(1).PublishProductCreatedAsync(
             Arg.Is<ProductCreatedEvent>(e => e!.Sku == "SKU-001"),
             Arg.Any<CancellationToken>());
+        await cacheService.Received(1).RemoveByPrefixAsync(CacheKeys.ProductListPrefix, Arg.Any<CancellationToken>());
     }
 }

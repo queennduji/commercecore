@@ -1,4 +1,5 @@
 using CatalogService.Application.Commands;
+using CatalogService.Application.Common;
 using CatalogService.Application.Handlers;
 using CatalogService.Application.Interfaces;
 using CatalogService.Domain.Entities;
@@ -10,10 +11,11 @@ namespace CatalogService.UnitTests.Handlers;
 public class DeleteProductCommandHandlerTests
 {
     [Fact]
-    public async Task Handle_ExistingProduct_ArchivesInsteadOfDeleting()
+    public async Task Handle_ExistingProduct_ArchivesInsteadOfDeletingAndInvalidatesCache()
     {
         var productRepository = Substitute.For<IProductRepository>();
         var eventPublisher = Substitute.For<IEventPublisher>();
+        var cacheService = Substitute.For<ICacheService>();
 
         var product = new Product
         {
@@ -28,12 +30,14 @@ public class DeleteProductCommandHandlerTests
         };
         productRepository.GetByIdAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
 
-        var handler = new DeleteProductCommandHandler(productRepository, eventPublisher);
+        var handler = new DeleteProductCommandHandler(productRepository, eventPublisher, cacheService);
         var result = await handler.Handle(new DeleteProductCommand(product.Id), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.Equal(ProductStatus.Archived, product.Status);
         await eventPublisher.Received(1).PublishProductDeletedAsync(Arg.Any<ProductDeletedEvent>(), Arg.Any<CancellationToken>());
+        await cacheService.Received(1).RemoveAsync(CacheKeys.Product(product.Id), Arg.Any<CancellationToken>());
+        await cacheService.Received(1).RemoveByPrefixAsync(CacheKeys.ProductListPrefix, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -41,9 +45,10 @@ public class DeleteProductCommandHandlerTests
     {
         var productRepository = Substitute.For<IProductRepository>();
         var eventPublisher = Substitute.For<IEventPublisher>();
+        var cacheService = Substitute.For<ICacheService>();
         productRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Product?)null);
 
-        var handler = new DeleteProductCommandHandler(productRepository, eventPublisher);
+        var handler = new DeleteProductCommandHandler(productRepository, eventPublisher, cacheService);
         var result = await handler.Handle(new DeleteProductCommand(Guid.NewGuid()), CancellationToken.None);
 
         Assert.False(result.Succeeded);

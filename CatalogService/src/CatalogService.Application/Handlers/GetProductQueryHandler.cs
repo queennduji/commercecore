@@ -11,15 +11,28 @@ public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ServiceRe
 {
     private readonly IProductRepository _productRepository;
     private readonly IProductImageRepository _productImageRepository;
+    private readonly ICacheService _cacheService;
 
-    public GetProductQueryHandler(IProductRepository productRepository, IProductImageRepository productImageRepository)
+    public GetProductQueryHandler(
+        IProductRepository productRepository,
+        IProductImageRepository productImageRepository,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
         _productImageRepository = productImageRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<ServiceResult<ProductDto>> Handle(GetProductQuery request, CancellationToken cancellationToken)
     {
+        var cacheKey = CacheKeys.Product(request.Id);
+
+        var cached = await _cacheService.GetAsync<ProductDto>(cacheKey, cancellationToken);
+        if (cached is not null)
+        {
+            return ServiceResult<ProductDto>.Success(cached);
+        }
+
         var product = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
         if (product is null)
         {
@@ -28,7 +41,10 @@ public class GetProductQueryHandler : IRequestHandler<GetProductQuery, ServiceRe
 
         var images = await _productImageRepository.ListByProductIdsAsync([request.Id], cancellationToken);
         var imageDtos = images.Select(i => i.ToDto()).ToList();
+        var dto = product.ToDto(imageDtos);
 
-        return ServiceResult<ProductDto>.Success(product.ToDto(imageDtos));
+        await _cacheService.SetAsync(cacheKey, dto, cancellationToken: cancellationToken);
+
+        return ServiceResult<ProductDto>.Success(dto);
     }
 }
