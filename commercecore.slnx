@@ -19,4 +19,14 @@
     <Project Path="CatalogService/tests/CatalogService.IntegrationTests/CatalogService.IntegrationTests.csproj" />
     <Project Path="CatalogService/tests/CatalogService.UnitTests/CatalogService.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/InventoryService/src/">
+    <Project Path="InventoryService/src/InventoryService.Api/InventoryService.Api.csproj" />
+    <Project Path="InventoryService/src/InventoryService.Application/InventoryService.Application.csproj" />
+    <Project Path="InventoryService/src/InventoryService.Domain/InventoryService.Domain.csproj" />
+    <Project Path="InventoryService/src/InventoryService.Infrastructure/InventoryService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/InventoryService/tests/">
+    <Project Path="InventoryService/tests/InventoryService.IntegrationTests/InventoryService.IntegrationTests.csproj" />
+    <Project Path="InventoryService/tests/InventoryService.UnitTests/InventoryService.UnitTests.csproj" />
+  </Folder>
 </Solution>

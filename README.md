@@ -7,17 +7,19 @@ Ecommerce microservices platform. Each service lives in its own top-level folder
 - .NET 10, Clean Architecture per service (Domain / Application / Infrastructure / Api), CQRS via MediatR
 - Confluent Kafka + Schema Registry (Avro) as the shared event bus — one broker/registry for the whole platform, each service owns its own topics
 - MinIO (S3-compatible) as shared object storage — one instance for the whole platform, each service gets its own bucket(s)
+- Redis as shared cache — one instance for the whole platform, each service namespaces its own keys
 - PostgreSQL, one database per service
 - Quartz.NET for background jobs
 
 ## Services
 
 - [AuthenticationService](AuthenticationService/README.md) — Identity/Auth: JWT issuance, user registration/login, refresh token lifecycle
-- [CatalogService](CatalogService/README.md) — Products and categories, full CRUD, validates JWTs issued by AuthenticationService for writes
+- [CatalogService](CatalogService/README.md) — Products and categories, full CRUD, product images via MinIO, Redis-cached reads, validates JWTs issued by AuthenticationService for writes
+- [InventoryService](InventoryService/README.md) — Multi-location stock and reservations, auto-provisioned from CatalogService's product events, validates JWTs issued by AuthenticationService for writes
 
 ## Local development
 
-Shared infra (Kafka + Schema Registry + MinIO) is started once from the root, before starting any individual service:
+Shared infra (Kafka + Schema Registry + MinIO + Redis) is started once from the root, before starting any individual service:
 
 ```bash
 docker compose up -d
