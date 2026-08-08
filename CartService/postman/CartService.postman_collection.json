@@ -1,0 +1,295 @@
+{
+  "info": {
+    "name": "CartService",
+    "description": "CommerceCore CartService — guest and authenticated cart flows against the Docker container. Includes an Auth folder that logs into AuthenticationService for the /me and /merge endpoints, and a Setup folder that creates a real product in CatalogService so AddItem has something valid to snapshot.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8087" },
+    { "key": "authBaseUrl", "value": "http://localhost:8085" },
+    { "key": "catalogBaseUrl", "value": "http://localhost:8086" },
+    { "key": "email", "value": "cart-postman@example.com" },
+    { "key": "password", "value": "P@ssw0rd123!" },
+    { "key": "accessToken", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "guestCartId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth (via AuthenticationService)",
+      "item": [
+        {
+          "name": "Register (idempotent)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/register", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (new) or 400 (already registered)', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (get token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/login", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup (via CatalogService)",
+      "item": [
+        {
+          "name": "Create category",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/categories", "host": ["{{catalogBaseUrl}}"], "path": ["api", "categories"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cart Demo Category\",\n  \"description\": null,\n  \"parentCategoryId\": null\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('categoryId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create + publish product (must be Active for AddItem)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cart Demo Widget\",\n  \"description\": \"For CartService smoke testing\",\n  \"sku\": \"SKU-CART-{{$randomInt}}\",\n  \"price\": 24.99,\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('productId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activate product (Draft -> Active)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products/{{productId}}", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products", "{{productId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cart Demo Widget\",\n  \"description\": \"For CartService smoke testing\",\n  \"price\": 24.99,\n  \"status\": 1,\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Guest Cart",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/carts", "host": ["{{baseUrl}}"], "path": ["api", "carts"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('guestCartId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/carts/{{guestCartId}}", "host": ["{{baseUrl}}"], "path": ["api", "carts", "{{guestCartId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Add item",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/carts/{{guestCartId}}/items", "host": ["{{baseUrl}}"], "path": ["api", "carts", "{{guestCartId}}", "items"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Update item quantity",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/carts/{{guestCartId}}/items/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "carts", "{{guestCartId}}", "items", "{{productId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Remove item",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/carts/{{guestCartId}}/items/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "carts", "{{guestCartId}}", "items", "{{productId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Clear (delete cart)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/carts/{{guestCartId}}", "host": ["{{baseUrl}}"], "path": ["api", "carts", "{{guestCartId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 204', function () { pm.response.to.have.status(204); });"] }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "My Cart (authenticated)",
+      "item": [
+        {
+          "name": "Get or create my cart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/carts/me", "host": ["{{baseUrl}}"], "path": ["api", "carts", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Merge guest cart into my cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/carts/me/merge", "host": ["{{baseUrl}}"], "path": ["api", "carts", "me", "merge"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceCartId\": \"{{guestCartId}}\"\n}"
+            },
+            "description": "Run 'Guest Cart > Create' + 'Add item' first to have a guest cart with something in it to merge."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

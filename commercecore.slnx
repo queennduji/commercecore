@@ -29,4 +29,14 @@
     <Project Path="InventoryService/tests/InventoryService.IntegrationTests/InventoryService.IntegrationTests.csproj" />
     <Project Path="InventoryService/tests/InventoryService.UnitTests/InventoryService.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/CartService/src/">
+    <Project Path="CartService/src/CartService.Api/CartService.Api.csproj" />
+    <Project Path="CartService/src/CartService.Application/CartService.Application.csproj" />
+    <Project Path="CartService/src/CartService.Domain/CartService.Domain.csproj" />
+    <Project Path="CartService/src/CartService.Infrastructure/CartService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/CartService/tests/">
+    <Project Path="CartService/tests/CartService.IntegrationTests/CartService.IntegrationTests.csproj" />
+    <Project Path="CartService/tests/CartService.UnitTests/CartService.UnitTests.csproj" />
+  </Folder>
 </Solution>

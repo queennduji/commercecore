@@ -1,0 +1,21 @@
+services:
+  cart-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    ports:
+      - "8087:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Redis__ConnectionString: "redis:6379"
+      Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      CatalogService__BaseUrl: "http://catalog-service:8080"
+
+networks:
+  commercecore:
+    external: true
+    name: commercecore
