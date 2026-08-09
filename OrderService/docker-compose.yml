@@ -1,0 +1,48 @@
+services:
+  order-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_service
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+    ports:
+      - "8089:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__OrderDatabase: "Host=order-postgres;Port=5432;Database=order_service;Username=postgres;Password=postgres"
+      Kafka__BootstrapServers: "kafka:29092"
+      Kafka__SchemaRegistryUrl: "http://schema-registry:8081"
+      Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      CartService__BaseUrl: "http://cart-service:8080"
+      InventoryService__BaseUrl: "http://inventory-service:8080"
+
+networks:
+  commercecore:
+    external: true
+    name: commercecore
+
+volumes:
+  postgres-data:

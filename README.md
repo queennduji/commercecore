@@ -17,6 +17,7 @@ Ecommerce microservices platform. Each service lives in its own top-level folder
 - [CatalogService](CatalogService/README.md) — Products and categories, full CRUD, product images via MinIO, Redis-cached reads, validates JWTs issued by AuthenticationService for writes
 - [InventoryService](InventoryService/README.md) — Multi-location stock and reservations, auto-provisioned from CatalogService's product events, validates JWTs issued by AuthenticationService for writes
 - [CartService](CartService/README.md) — Guest and authenticated shopping carts backed entirely by Redis, snapshotting product price/name from CatalogService at add-time
+- [OrderService](OrderService/README.md) — Checkout saga orchestrator: reserves stock in InventoryService, creates the order, clears the cart, and drives the order lifecycle (Pending → Paid → Shipped → Delivered, plus Cancelled/Refunded)
 
 ## Local development
 

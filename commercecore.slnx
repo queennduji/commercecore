@@ -39,4 +39,14 @@
     <Project Path="CartService/tests/CartService.IntegrationTests/CartService.IntegrationTests.csproj" />
     <Project Path="CartService/tests/CartService.UnitTests/CartService.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/OrderService/src/">
+    <Project Path="OrderService/src/OrderService.Api/OrderService.Api.csproj" />
+    <Project Path="OrderService/src/OrderService.Application/OrderService.Application.csproj" />
+    <Project Path="OrderService/src/OrderService.Domain/OrderService.Domain.csproj" />
+    <Project Path="OrderService/src/OrderService.Infrastructure/OrderService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/OrderService/tests/">
+    <Project Path="OrderService/tests/OrderService.IntegrationTests/OrderService.IntegrationTests.csproj" />
+    <Project Path="OrderService/tests/OrderService.UnitTests/OrderService.UnitTests.csproj" />
+  </Folder>
 </Solution>

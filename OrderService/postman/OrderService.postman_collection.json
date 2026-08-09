@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "OrderService",
+    "description": "CommerceCore OrderService — checkout and order lifecycle against the Docker container. Includes an Auth folder that logs into AuthenticationService, and Setup folders that create a real product+stock in CatalogService/InventoryService and add it to the caller's own cart in CartService, so Checkout has something real to work with.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8089" },
+    { "key": "authBaseUrl", "value": "http://localhost:8085" },
+    { "key": "catalogBaseUrl", "value": "http://localhost:8086" },
+    { "key": "cartBaseUrl", "value": "http://localhost:8087" },
+    { "key": "inventoryBaseUrl", "value": "http://localhost:8088" },
+    { "key": "email", "value": "order-postman@example.com" },
+    { "key": "password", "value": "P@ssw0rd123!" },
+    { "key": "accessToken", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "locationId", "value": "" },
+    { "key": "cartId", "value": "" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth (via AuthenticationService)",
+      "item": [
+        {
+          "name": "Register (idempotent)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/register", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (new) or 400 (already registered)', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (get token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/login", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup (Catalog + Inventory + Cart)",
+      "item": [
+        {
+          "name": "1. Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/categories", "host": ["{{catalogBaseUrl}}"], "path": ["api", "categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Order Demo Category\",\n  \"description\": null,\n  \"parentCategoryId\": null\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('categoryId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create + activate product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Order Demo Widget\",\n  \"description\": null,\n  \"sku\": \"SKU-ORDER-{{$randomInt}}\",\n  \"price\": 29.99,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('productId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Activate product (Draft -> Active)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products/{{productId}}", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products", "{{productId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Order Demo Widget\",\n  \"description\": null,\n  \"price\": 29.99,\n  \"status\": 1,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "4. Create location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/locations", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "locations"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Order Demo Warehouse\",\n  \"code\": \"WH-ORD-{{$randomInt}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('locationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Stock the product at that location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/inventory/adjust", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "inventory", "adjust"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"delta\": 50,\n  \"reason\": \"initial stock for order demo\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "6. Get-or-create my cart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/me", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "me"] },
+            "description": "For an authenticated caller, CartService's cart id equals the caller's own user id (there's no literal /me route on the item-mutation endpoints, only on this GET) — this step captures that real id into {{cartId}} for the next request to target."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('cartId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Add product to my cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/{{cartId}}/items", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "{{cartId}}", "items"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/orders/checkout", "host": ["{{baseUrl}}"], "path": ["api", "orders", "checkout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"shippingAddress\": \"123 Main St, Springfield\"\n}" },
+            "description": "Checks out the caller's own cart (Setup step 7 must have succeeded first). Fails with 400 if the cart is empty or stock can't be reserved."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('orderId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "List my orders",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/orders/me?page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["api", "orders", "me"], "query": [{ "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Pay",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] },
+            "description": "Pending -> Paid. Ownership-checked."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Ship",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/ship", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "ship"] },
+            "description": "Paid -> Shipped. Commits every line's InventoryService reservation (stock actually leaves the building). Ops action, no ownership check."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Deliver",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/deliver", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "deliver"] },
+            "description": "Shipped -> Delivered. Ops action."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Cancel",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "cancel"] },
+            "description": "Pending/Paid -> Cancelled, releases reservations. Ownership-checked. Only run this on a fresh order that hasn't been Shipped yet — run 'Checkout' again first if needed."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Refund",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/refund", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "refund"] },
+            "description": "Paid/Shipped/Delivered -> Refunded. Does not touch inventory. Ops action."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    }
+  ]
+}
