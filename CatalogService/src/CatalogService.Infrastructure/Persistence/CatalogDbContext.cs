@@ -33,6 +33,17 @@ public class CatalogDbContext : DbContext
             entity.HasKey(c => c.Id);
             entity.Property(c => c.Name).IsRequired().HasMaxLength(200);
             entity.HasIndex(c => c.ParentCategoryId);
+
+            // Sibling-scoped uniqueness: a name can repeat elsewhere in the tree, just not twice
+            // under the same parent. Postgres treats every NULL as distinct in a plain unique
+            // index, so ParentCategoryId IS NULL (top-level categories) needs its own partial
+            // index rather than relying on the composite one to catch it.
+            entity.HasIndex(c => new { c.Name, c.ParentCategoryId })
+                .IsUnique()
+                .HasFilter("\"ParentCategoryId\" IS NOT NULL");
+            entity.HasIndex(c => c.Name)
+                .IsUnique()
+                .HasFilter("\"ParentCategoryId\" IS NULL");
         });
 
         builder.Entity<ProductImage>(entity =>

@@ -38,6 +38,12 @@ public class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategoryComman
             }
         }
 
+        var sibling = await _categoryRepository.GetByNameAndParentAsync(request.Name, request.ParentCategoryId, cancellationToken);
+        if (sibling is not null && sibling.Id != request.Id)
+        {
+            return ServiceResult<CategoryDto>.Failure("A category with this name already exists under this parent.");
+        }
+
         category.Name = request.Name;
         category.Description = request.Description;
         category.ParentCategoryId = request.ParentCategoryId;

@@ -28,6 +28,12 @@ public class CreateCategoryCommandHandler : IRequestHandler<CreateCategoryComman
             }
         }
 
+        var sibling = await _categoryRepository.GetByNameAndParentAsync(request.Name, request.ParentCategoryId, cancellationToken);
+        if (sibling is not null)
+        {
+            return ServiceResult<CategoryDto>.Failure("A category with this name already exists under this parent.");
+        }
+
         var now = DateTime.UtcNow;
         var category = new Category
         {

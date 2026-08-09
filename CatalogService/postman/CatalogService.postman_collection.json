@@ -88,7 +88,7 @@
             "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Gadgets\",\n  \"parentCategoryId\": null\n}"
+              "raw": "{\n  \"name\": \"Electronics {{$randomInt}}\",\n  \"description\": \"Gadgets\",\n  \"parentCategoryId\": null\n}"
             }
           },
           "event": [
@@ -140,7 +140,7 @@
             "url": { "raw": "{{baseUrl}}/api/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "categories", "{{categoryId}}"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics & Gadgets\",\n  \"description\": \"Updated description\",\n  \"parentCategoryId\": null\n}"
+              "raw": "{\n  \"name\": \"Electronics & Gadgets {{$randomInt}}\",\n  \"description\": \"Updated description\",\n  \"parentCategoryId\": null\n}"
             }
           },
           "event": [

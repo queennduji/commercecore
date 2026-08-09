@@ -18,6 +18,12 @@ public class CategoryRepository : ICategoryRepository
         return _dbContext.Categories.SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    public Task<Category?> GetByNameAndParentAsync(string name, Guid? parentCategoryId, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Categories
+            .SingleOrDefaultAsync(c => c.Name == name && c.ParentCategoryId == parentCategoryId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Category>> ListAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.Categories

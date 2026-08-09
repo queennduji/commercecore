@@ -35,4 +35,37 @@ public class UpdateCategoryCommandHandlerTests
 
         Assert.False(result.Succeeded);
     }
+
+    [Fact]
+    public async Task Handle_RenamingToAnotherSiblingsName_ReturnsFailure()
+    {
+        var categoryRepository = Substitute.For<ICategoryRepository>();
+        var category = new Category { Id = Guid.NewGuid(), Name = "Phones", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        var otherSibling = new Category { Id = Guid.NewGuid(), Name = "Electronics", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        categoryRepository.GetByIdAsync(category.Id, Arg.Any<CancellationToken>()).Returns(category);
+        categoryRepository.GetByNameAndParentAsync("Electronics", null, Arg.Any<CancellationToken>()).Returns(otherSibling);
+
+        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        var result = await handler.Handle(new UpdateCategoryCommand(category.Id, "Electronics", null, null), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("A category with this name already exists under this parent.", result.Errors);
+    }
+
+    [Fact]
+    public async Task Handle_KeepingOwnCurrentName_Succeeds()
+    {
+        var categoryRepository = Substitute.For<ICategoryRepository>();
+        var category = new Category { Id = Guid.NewGuid(), Name = "Electronics", Description = "Old", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        categoryRepository.GetByIdAsync(category.Id, Arg.Any<CancellationToken>()).Returns(category);
+        // GetByNameAndParentAsync legitimately finds the category itself here — the handler must
+        // not treat that self-match as a conflict.
+        categoryRepository.GetByNameAndParentAsync("Electronics", null, Arg.Any<CancellationToken>()).Returns(category);
+
+        var handler = new UpdateCategoryCommandHandler(categoryRepository);
+        var result = await handler.Handle(new UpdateCategoryCommand(category.Id, "Electronics", "New description", null), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("New description", result.Value!.Description);
+    }
 }
