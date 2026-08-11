@@ -1,0 +1,52 @@
+services:
+  payment-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_service
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PaymentDatabase: "Host=payment-postgres;Port=5432;Database=payment_service;Username=postgres;Password=postgres"
+      Kafka__BootstrapServers: "kafka:29092"
+      Kafka__SchemaRegistryUrl: "http://schema-registry:8081"
+      Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      # Unlike the shared Jwt key above, this is a real per-account external credential — it is
+      # NEVER hardcoded here. Set it in a .env file next to this docker-compose.yml (gitignored)
+      # or export STRIPE_SECRET_KEY in your shell before running `docker compose up`. See README.
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:?Set STRIPE_SECRET_KEY in a .env file or your shell before starting PaymentService — see PaymentService/README.md}"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+
+networks:
+  commercecore:
+    external: true
+    name: commercecore
+
+volumes:
+  postgres-data:
