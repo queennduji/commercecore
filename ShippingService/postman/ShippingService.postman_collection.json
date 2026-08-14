@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "ShippingService",
+    "description": "CommerceCore ShippingService — real EasyPost test-mode tracker creation and polling, against the Docker container. Shipments are only ever created by consuming OrderService's order.paid.v1 — there's no direct 'create shipment' endpoint — so the Setup folder runs the full chain (register/login, create product+stock, add to cart, checkout, pay) needed to get a real order.paid.v1 event published, then polls for the auto-created shipment. Requires ShippingService running with your own free EasyPost test API key (see its README), and OrderService/CartService/CatalogService/InventoryService/PaymentService all running for Setup to succeed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8091" },
+    { "key": "authBaseUrl", "value": "http://localhost:8085" },
+    { "key": "catalogBaseUrl", "value": "http://localhost:8086" },
+    { "key": "cartBaseUrl", "value": "http://localhost:8087" },
+    { "key": "inventoryBaseUrl", "value": "http://localhost:8088" },
+    { "key": "orderBaseUrl", "value": "http://localhost:8089" },
+    { "key": "email", "value": "shipping-postman@example.com" },
+    { "key": "password", "value": "P@ssw0rd123!" },
+    { "key": "accessToken", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "locationId", "value": "" },
+    { "key": "cartId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "shipmentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth (via AuthenticationService)",
+      "item": [
+        {
+          "name": "Register (idempotent)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/register", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (new) or 400 (already registered)', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (get token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/login", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup (Catalog + Inventory + Cart + Order + Pay)",
+      "item": [
+        {
+          "name": "1. Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/categories", "host": ["{{catalogBaseUrl}}"], "path": ["api", "categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Shipping Demo Category\",\n  \"description\": null,\n  \"parentCategoryId\": null\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('categoryId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create + activate product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Shipping Demo Widget\",\n  \"description\": null,\n  \"sku\": \"SKU-SHIP-{{$randomInt}}\",\n  \"price\": 24.99,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('productId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Activate product (Draft -> Active)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products/{{productId}}", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products", "{{productId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Shipping Demo Widget\",\n  \"description\": null,\n  \"price\": 24.99,\n  \"status\": 1,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "4. Create location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/locations", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "locations"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Shipping Demo Warehouse\",\n  \"code\": \"WH-SHIP-{{$randomInt}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('locationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Stock the product at that location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/inventory/adjust", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "inventory", "adjust"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"delta\": 20,\n  \"reason\": \"initial stock for shipping demo\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "6. Get-or-create my cart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/me", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('cartId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Add product to my cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/{{cartId}}/items", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "{{cartId}}", "items"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "8. Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{orderBaseUrl}}/api/orders/checkout", "host": ["{{orderBaseUrl}}"], "path": ["api", "orders", "checkout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"shippingAddress\": \"77 Fulfillment Ave, Springfield\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('orderId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9. Pay (publishes order.paid.v1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{orderBaseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{orderBaseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] },
+            "body": { "mode": "raw", "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}" },
+            "description": "Requires PaymentService running with a real Stripe test key. This is the step that publishes order.paid.v1 — ShippingService's consumer picks it up and auto-creates a Shipment within a second or two. Run 'Get by order' below (retry if 404 — the consumer may not have caught up yet) to fetch it."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shipments",
+      "item": [
+        {
+          "name": "Get by order",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/shipments/order/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "order", "{{orderId}}"] },
+            "description": "Returns 404 until ShippingService's order.paid.v1 consumer has caught up — retry a couple of times a second or two apart after Pay. Status starts as AwaitingFulfillment."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('shipmentId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}"] },
+            "description": "Ownership-checked — returns 404 (not 403) if the shipment belongs to a different caller."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Dispatch",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/dispatch", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "dispatch"] },
+            "body": { "mode": "raw", "raw": "{\n  \"carrier\": \"USPS\",\n  \"trackingCode\": \"EZ2000000002\"\n}" },
+            "description": "AwaitingFulfillment -> Dispatched. Ops action. Creates a real EasyPost test tracker (EZ2000000002 simulates in_transit) and publishes shipment.dispatched.v1, which flips the order to Shipped — check OrderService's Get order request to see it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Status is Dispatched', function () { pm.expect(pm.response.json().status).to.eql('Dispatched'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh tracking",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/refresh-tracking", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "refresh-tracking"] },
+            "description": "Re-polls EasyPost for the tracker's latest status. EZ2000000002 (used above) is a fixed test code that always reports in_transit, so re-running this won't reach Delivered on its own — dispatch a fresh shipment with EZ4000000004 to see the Delivered path end to end, publishing shipment.delivered.v1 which flips the order to Delivered."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Failure paths",
+      "item": [
+        {
+          "name": "Dispatch an already-dispatched shipment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/dispatch", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "dispatch"] },
+            "body": { "mode": "raw", "raw": "{\n  \"carrier\": \"USPS\",\n  \"trackingCode\": \"EZ2000000002\"\n}" },
+            "description": "Run 'Dispatch' in the Shipments folder first. Proves a shipment can't be dispatched twice."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"] } }
+          ]
+        },
+        {
+          "name": "Refresh tracking before dispatch",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/refresh-tracking", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "refresh-tracking"] },
+            "description": "Run against a shipment straight from Setup/Pay (still AwaitingFulfillment, before Dispatch) — there's no EasyPost tracker to poll yet."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"] } }
+          ]
+        }
+      ]
+    }
+  ]
+}
