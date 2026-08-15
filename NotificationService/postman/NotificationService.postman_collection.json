@@ -1,0 +1,267 @@
+{
+  "info": {
+    "name": "NotificationService",
+    "description": "CommerceCore NotificationService — real Resend test-mode emails against the Docker container. Notifications are only ever created by this service's own Kafka consumers (auth.user-registered.v1, order.*.v1, payment.failed.v1) — there's no direct 'send notification' endpoint — so the Setup folder registers a real user and runs a real checkout+pay to trigger real notification emails, then polls for them to appear. Requires NotificationService running with your own free Resend API key (see its README), and AuthenticationService/CatalogService/InventoryService/CartService/OrderService/PaymentService all running for Setup to succeed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8092" },
+    { "key": "authBaseUrl", "value": "http://localhost:8085" },
+    { "key": "catalogBaseUrl", "value": "http://localhost:8086" },
+    { "key": "cartBaseUrl", "value": "http://localhost:8087" },
+    { "key": "inventoryBaseUrl", "value": "http://localhost:8088" },
+    { "key": "orderBaseUrl", "value": "http://localhost:8089" },
+    { "key": "email", "value": "notification-postman@example.com" },
+    { "key": "password", "value": "P@ssw0rd123!" },
+    { "key": "accessToken", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "locationId", "value": "" },
+    { "key": "cartId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "notificationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth (via AuthenticationService)",
+      "item": [
+        {
+          "name": "1. Register (this is the event NotificationService needs — see description)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/register", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "description": "Unlike every other service's collection, this one should NOT be run idempotently against an already-registered email — AuthenticationService only publishes auth.user-registered.v1 on a genuinely new registration, and NotificationService's local email lookup is built entirely from that event. If this returns 400 (already registered), change the 'email' collection variable to something new and re-run this request before continuing, or notifications later in this flow will fail with 'No known email address for this user.'"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (new registration)', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Login (get token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authBaseUrl}}/api/auth/login", "host": ["{{authBaseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup (Catalog + Inventory + Cart + Order + Pay)",
+      "item": [
+        {
+          "name": "1. Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/categories", "host": ["{{catalogBaseUrl}}"], "path": ["api", "categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Notification Demo Category\",\n  \"description\": null,\n  \"parentCategoryId\": null\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('categoryId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create + activate product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Notification Demo Widget\",\n  \"description\": null,\n  \"sku\": \"SKU-NOTIFY-{{$randomInt}}\",\n  \"price\": 18.50,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('productId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Activate product (Draft -> Active)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{catalogBaseUrl}}/api/products/{{productId}}", "host": ["{{catalogBaseUrl}}"], "path": ["api", "products", "{{productId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Notification Demo Widget\",\n  \"description\": null,\n  \"price\": 18.50,\n  \"status\": 1,\n  \"categoryId\": \"{{categoryId}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "4. Create location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/locations", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "locations"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Notification Demo Warehouse\",\n  \"code\": \"WH-NOTIFY-{{$randomInt}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('locationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Stock the product at that location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{inventoryBaseUrl}}/api/inventory/adjust", "host": ["{{inventoryBaseUrl}}"], "path": ["api", "inventory", "adjust"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"delta\": 10,\n  \"reason\": \"initial stock for notification demo\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "6. Get-or-create my cart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/me", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('cartId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Add product to my cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{cartBaseUrl}}/api/carts/{{cartId}}/items", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "{{cartId}}", "items"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "8. Checkout (triggers 'Order received' notification)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{orderBaseUrl}}/api/orders/checkout", "host": ["{{orderBaseUrl}}"], "path": ["api", "orders", "checkout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"shippingAddress\": \"55 Notification Way, Springfield\"\n}" },
+            "description": "Publishes order.created.v1, which this service consumes to send an 'Order received' email."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('orderId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9. Pay (triggers 'Payment received' notification)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{orderBaseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{orderBaseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] },
+            "body": { "mode": "raw", "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}" },
+            "description": "Requires PaymentService running with a real Stripe test key. Publishes order.paid.v1, which this service consumes to send a 'Payment received' email — check the inbox for the address you registered with. Run 'List mine' below (retry if empty — the consumer may not have caught up yet) to see it recorded."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List mine",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/notifications/me?page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "me"], "query": [{ "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] },
+            "description": "Retry a couple of times a second or two apart after Checkout/Pay — the consumers may not have caught up yet."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "if (body.length > 0) { pm.collectionVariables.set('notificationId', body[0].id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get by id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/notifications/{{notificationId}}", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "{{notificationId}}"] },
+            "description": "Ownership-checked — returns 404 (not 403) if the notification belongs to a different caller. Run 'List mine' first to capture an id."
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        }
+      ]
+    }
+  ]
+}

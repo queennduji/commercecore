@@ -1,0 +1,57 @@
+services:
+  notification-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notification_service
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+    ports:
+      - "8092:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__NotificationDatabase: "Host=notification-postgres;Port=5432;Database=notification_service;Username=postgres;Password=postgres"
+      Kafka__BootstrapServers: "kafka:29092"
+      Kafka__SchemaRegistryUrl: "http://schema-registry:8081"
+      Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      # Unlike the shared Jwt key above, this is a real per-account external credential — it is
+      # NEVER hardcoded here. Set it in a .env file next to this docker-compose.yml (gitignored)
+      # or export RESEND_API_KEY in your shell before running `docker compose up`. See README.
+      Resend__ApiKey: "${RESEND_API_KEY:?Set RESEND_API_KEY in a .env file or your shell before starting NotificationService — see NotificationService/README.md}"
+      # Same posture as Resend above — a real per-account external credential, never hardcoded.
+      # Set these in the .env file next to this docker-compose.yml (gitignored) — see README.
+      Twilio__AccountSid: "${TWILIO_ACCOUNT_SID:?Set TWILIO_ACCOUNT_SID in a .env file or your shell before starting NotificationService — see NotificationService/README.md}"
+      Twilio__AuthToken: "${TWILIO_AUTH_TOKEN:?Set TWILIO_AUTH_TOKEN in a .env file or your shell before starting NotificationService — see NotificationService/README.md}"
+      Twilio__FromPhoneNumber: "${TWILIO_FROM_PHONE_NUMBER:?Set TWILIO_FROM_PHONE_NUMBER in a .env file or your shell before starting NotificationService — see NotificationService/README.md}"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+
+networks:
+  commercecore:
+    external: true
+    name: commercecore
+
+volumes:
+  postgres-data:
