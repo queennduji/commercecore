@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "ApiGateway",
+    "description": "CommerceCore ApiGateway — every request in this collection goes through the gateway's single base URL (http://localhost:8080) instead of any individual service's own port, demonstrating it as the platform's single public entry point. Requests are grouped to show both halves of the gateway's auth behavior: pass-through routes (Auth/Catalog) that work with no token, and gateway-enforced routes (Orders) that the gateway itself rejects with 401 before ever reaching OrderService if no token is presented. Requires AuthenticationService, CatalogService, and OrderService (plus its own dependencies) running behind the gateway — see ApiGateway/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "email", "value": "gateway-postman@example.com" },
+    { "key": "password", "value": "P@ssw0rd123!" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pass-through routes (no gateway auth enforcement)",
+      "item": [
+        {
+          "name": "1. Register (via gateway, no token needed — /api/auth is pass-through)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "description": "Not idempotent — AuthenticationService returns 400 if this email is already registered. Change the 'email' collection variable and re-run if needed."
+          }
+        },
+        {
+          "name": "2. Login (via gateway, get token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Browse products (via gateway, no token — /api/products is pass-through)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (anonymous browsing preserved through the gateway)', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gateway-enforced routes",
+      "item": [
+        {
+          "name": "4. Get my orders WITHOUT a token — gateway itself returns 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/orders/me", "host": ["{{baseUrl}}"], "path": ["api", "orders", "me"] },
+            "description": "OrdersController is blanket [Authorize], so the gateway's own RequireAuthenticatedUser policy is applied to this route — it rejects with 401 before the request ever reaches OrderService."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 (rejected at the gateway)', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Get my orders WITH a token — proxies through to OrderService",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/orders/me", "host": ["{{baseUrl}}"], "path": ["api", "orders", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 (proxied through to OrderService)', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
