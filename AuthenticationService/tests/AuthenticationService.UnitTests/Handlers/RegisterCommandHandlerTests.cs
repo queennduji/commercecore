@@ -77,4 +77,32 @@ public class RegisterCommandHandlerTests
         Assert.False(result.Succeeded);
         Assert.NotEmpty(result.Errors);
     }
+
+    [Fact]
+    public async Task Handle_WithPhoneNumber_PublishesEventWithPhoneNumber()
+    {
+        var handler = CreateHandler(out var eventPublisher, out _);
+        var command = new RegisterCommand("with-phone@example.com", "P@ssw0rd123!", "+15551234567");
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        await eventPublisher.Received(1).PublishUserRegisteredAsync(
+            Arg.Is<UserRegisteredEvent>(e => e != null && e.PhoneNumber == "+15551234567"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WithoutPhoneNumber_PublishesEventWithNullPhoneNumber()
+    {
+        var handler = CreateHandler(out var eventPublisher, out _);
+        var command = new RegisterCommand("no-phone@example.com", "P@ssw0rd123!");
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        await eventPublisher.Received(1).PublishUserRegisteredAsync(
+            Arg.Is<UserRegisteredEvent>(e => e != null && e.PhoneNumber == null),
+            Arg.Any<CancellationToken>());
+    }
 }

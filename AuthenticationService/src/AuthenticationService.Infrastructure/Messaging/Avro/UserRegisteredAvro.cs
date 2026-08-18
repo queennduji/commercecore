@@ -14,6 +14,7 @@ public class UserRegisteredAvro : ISpecificRecord
           "fields": [
             {"name": "userId", "type": "string"},
             {"name": "email", "type": "string"},
+            {"name": "phoneNumber", "type": ["null", "string"], "default": null},
             {"name": "registeredAt", "type": {"type": "long", "logicalType": "timestamp-millis"}}
           ]
         }
@@ -21,6 +22,7 @@ public class UserRegisteredAvro : ISpecificRecord
 
     public string UserId { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
     public DateTime RegisteredAt { get; set; }
 
     public Schema Schema => _SCHEMA;
@@ -29,7 +31,8 @@ public class UserRegisteredAvro : ISpecificRecord
     {
         0 => UserId,
         1 => Email,
-        2 => RegisteredAt,
+        2 => PhoneNumber!,
+        3 => RegisteredAt,
         _ => throw new AvroRuntimeException($"Bad index {fieldPos} in Get()")
     };
 
@@ -39,7 +42,8 @@ public class UserRegisteredAvro : ISpecificRecord
         {
             case 0: UserId = (string)fieldValue; break;
             case 1: Email = (string)fieldValue; break;
-            case 2: RegisteredAt = (DateTime)fieldValue; break;
+            case 2: PhoneNumber = (string?)fieldValue; break;
+            case 3: RegisteredAt = (DateTime)fieldValue; break;
             default: throw new AvroRuntimeException($"Bad index {fieldPos} in Put()");
         }
     }

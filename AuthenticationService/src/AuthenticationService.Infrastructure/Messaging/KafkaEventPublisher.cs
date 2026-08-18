@@ -45,6 +45,7 @@ public class KafkaEventPublisher : IEventPublisher, IAsyncDisposable
             {
                 UserId = evt.UserId.ToString(),
                 Email = evt.Email,
+                PhoneNumber = evt.PhoneNumber,
                 RegisteredAt = evt.RegisteredAt
             }
         };

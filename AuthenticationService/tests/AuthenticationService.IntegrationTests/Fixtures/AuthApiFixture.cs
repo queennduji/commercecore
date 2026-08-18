@@ -68,7 +68,13 @@ public class AuthApiFixture : IAsyncLifetime
                     ["Kafka:SchemaRegistryUrl"] = $"http://localhost:{_schemaRegistry.GetMappedPublicPort(SchemaRegistryPort)}",
                     ["Jwt:Key"] = Convert.ToBase64String(new byte[32]),
                     ["Jwt:Issuer"] = "CommerceCore.AuthenticationService.IntegrationTests",
-                    ["Jwt:Audience"] = "CommerceCore.IntegrationTests"
+                    ["Jwt:Audience"] = "CommerceCore.IntegrationTests",
+                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // runtime, so a real collector isn't needed here. Only present because Otel
+                    // config is required at startup, same as Jwt above.
+                    ["Otel:ServiceName"] = "AuthenticationService.Tests",
+                    ["Otel:TracesEndpoint"] = "http://127.0.0.1:1",
+                    ["Otel:LogsEndpoint"] = "http://127.0.0.1:1"
                 });
             });
         });

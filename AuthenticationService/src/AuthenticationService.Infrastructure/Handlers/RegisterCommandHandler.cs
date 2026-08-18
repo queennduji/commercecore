@@ -34,7 +34,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ServiceRe
         var user = new ApplicationUser
         {
             UserName = request.Email,
-            Email = request.Email
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -49,6 +50,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ServiceRe
         {
             UserId = user.Id,
             Email = user.Email!,
+            PhoneNumber = user.PhoneNumber,
             RegisteredAt = DateTime.UtcNow
         }, cancellationToken);
 

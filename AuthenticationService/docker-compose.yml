@@ -33,6 +33,8 @@ services:
       ConnectionStrings__AuthDatabase: "Host=auth-postgres;Port=5432;Database=authentication_service;Username=postgres;Password=postgres"
       Kafka__BootstrapServers: "kafka:29092"
       Kafka__SchemaRegistryUrl: "http://schema-registry:8081"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
 
 networks:
   commercecore:

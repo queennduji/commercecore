@@ -34,6 +34,26 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
+    public async Task Register_NonE164PhoneNumber_ReturnsBadRequestWithValidationError()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterCommand($"valid-{Guid.NewGuid():N}@example.com", "P@ssw0rd123!", "555-1234"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("PhoneNumber", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Register_ValidE164PhoneNumber_ReturnsOk()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterCommand($"valid-{Guid.NewGuid():N}@example.com", "P@ssw0rd123!", "+15551234567"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Login_EmptyEmail_ReturnsBadRequestWithValidationError()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginCommand("", "P@ssw0rd123!"));
