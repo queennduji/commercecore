@@ -94,6 +94,13 @@ public class ProductCreatedConsumer : BackgroundService
             {
                 _logger.LogError(ex, "Failed to consume from {Topic}", _options.ProductCreatedTopic);
             }
+            catch (Exception ex)
+            {
+                // A single malformed/invalid message must not take the whole consumer — and by
+                // extension this host process, since HostOptions.BackgroundServiceExceptionBehavior
+                // defaults to StopHost — down with it. Logged and skipped.
+                _logger.LogError(ex, "Failed to process a message from {Topic}", _options.ProductCreatedTopic);
+            }
         }
 
         _consumer.Close();

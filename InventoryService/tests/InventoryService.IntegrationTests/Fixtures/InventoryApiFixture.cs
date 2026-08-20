@@ -79,7 +79,13 @@ public class InventoryApiFixture : IAsyncLifetime
                     ["Kafka:SchemaRegistryUrl"] = SchemaRegistryUrl,
                     ["Jwt:Key"] = JwtKey,
                     ["Jwt:Issuer"] = JwtIssuer,
-                    ["Jwt:Audience"] = JwtAudience
+                    ["Jwt:Audience"] = JwtAudience,
+                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // runtime, so a real collector isn't needed here. Only present because Otel
+                    // config is required at startup, same as Jwt above.
+                    ["Otel:ServiceName"] = "InventoryService.Tests",
+                    ["Otel:TracesEndpoint"] = "http://127.0.0.1:1",
+                    ["Otel:LogsEndpoint"] = "http://127.0.0.1:1"
                 });
             });
         });
