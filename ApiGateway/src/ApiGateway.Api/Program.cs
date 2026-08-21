@@ -36,6 +36,25 @@ builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
+// Storefront's cart calls (anonymous by design — browsing/guest-cart routes) go straight from
+// the browser to the gateway instead of through Storefront's own server, so those origins need
+// an explicit CORS allow. No credentials mode: nothing here relies on cookies crossing origins,
+// only a plain Authorization header on authenticated calls, which AllowAnyHeader covers.
+const string StorefrontCorsPolicy = "Storefront";
+builder.Services.AddCors(options =>
+{
+    var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>()
+        ?? new CorsOptions();
+
+    options.AddPolicy(StorefrontCorsPolicy, policy =>
+    {
+        if (corsOptions.AllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsOptions.AllowedOrigins).AllowAnyMethod().AllowAnyHeader();
+        }
+    });
+});
+
 // Fixed-window, per-client-IP global limit — applies to every route (including /health and
 // unauthenticated requests to protected routes) since abuse doesn't stop at auth. Read lazily
 // from IConfiguration for the same test-host-override reason as the JWT options below.
@@ -113,6 +132,7 @@ var app = builder.Build();
 // still get rate-limited, not exempted because every request fails auth first.
 app.UseRateLimiter();
 
+app.UseCors(StorefrontCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
