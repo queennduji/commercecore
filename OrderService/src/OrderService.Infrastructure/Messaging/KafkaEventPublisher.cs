@@ -82,7 +82,8 @@ public class KafkaEventPublisher : IEventPublisher, IAsyncDisposable
             {
                 OrderId = evt.OrderId.ToString(),
                 UserId = evt.UserId.ToString(),
-                PaidAt = evt.PaidAt
+                PaidAt = evt.PaidAt,
+                ShippingAddress = evt.ShippingAddress
             }
         };
 

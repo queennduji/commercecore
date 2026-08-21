@@ -9,5 +9,6 @@ public class MarkOrderPaidCommandValidator : AbstractValidator<MarkOrderPaidComm
     {
         RuleFor(x => x.OrderId).NotEmpty();
         RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.PaymentMethodId).NotEmpty();
     }
 }

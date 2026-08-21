@@ -4,10 +4,12 @@ Checkout and order-lifecycle microservice for the CommerceCore ecommerce platfor
 orchestrator: it calls CartService and InventoryService synchronously to turn a cart into a
 reserved, durable order, then drives that order through its lifecycle.
 
-Payment and Shipping services don't exist yet, so `Paid`/`Shipped`/`Refunded` are triggered
-directly through this service's own API for now rather than by real downstream services — the
-lifecycle is built with its full shape so those services can plug into the existing transitions
-later instead of requiring a rework.
+`Paid` is triggered directly through this service's own API and calls PaymentService
+synchronously (real Stripe test-mode charges — see PaymentService's README). `Shipped`/`Delivered`
+are driven by ShippingService instead: this service consumes `shipment.dispatched.v1` and
+`shipment.delivered.v1` from Kafka and advances the order automatically — there's no manual
+"ship"/"deliver" endpoint anymore. `Refund` remains a manual ops action, since no fulfillment
+system owns that transition.
 
 ## Stack
 
@@ -16,7 +18,7 @@ later instead of requiring a rework.
 - Two synchronous HTTP calls (same pattern as CartService → CatalogService):
   - **CartService** — fetch the caller's own cart at checkout (`GET /api/carts/{userId}`, per CartService's deterministic-authenticated-cart convention), then clear it
   - **InventoryService** — look up per-location stock (`GET /api/inventory/{productId}`) to pick a fulfilling location, then reserve/release/commit against it as the order moves through its lifecycle
-- Confluent Kafka + Schema Registry (Avro): publishes `order.created.v1`, `order.paid.v1`, `order.shipped.v1`, `order.delivered.v1`, `order.cancelled.v1`, `order.refunded.v1` — no consumer yet, since nothing exists to react to (same "don't build ahead of a real consumer" reasoning used elsewhere in this project)
+- Confluent Kafka + Schema Registry (Avro): publishes `order.created.v1`, `order.paid.v1` (carries `shippingAddress`, consumed by ShippingService), `order.shipped.v1`, `order.delivered.v1`, `order.cancelled.v1`, `order.refunded.v1`. Also **consumes** `shipment.dispatched.v1`/`shipment.delivered.v1` (owned by ShippingService) — the first Kafka consumers in this service, driving `Ship`/`Deliver` automatically instead of via an ops endpoint
 - CQRS via MediatR, FluentValidation for request validation
 
 Command/query handlers live in the **Application** layer (same as Catalog/Inventory/Cart).
@@ -36,7 +38,7 @@ Command/query handlers live in the **Application** layer (same as Catalog/Invent
 ## Order lifecycle
 
 ```
-Pending --pay--> Paid --ship--> Shipped --deliver--> Delivered
+Pending --pay--> Paid --[shipment.dispatched.v1]--> Shipped --[shipment.delivered.v1]--> Delivered
    |                |
  cancel           cancel / refund
    |                |
@@ -44,14 +46,18 @@ Pending --pay--> Paid --ship--> Shipped --deliver--> Delivered
 Cancelled        Refunded (also reachable from Shipped/Delivered)
 ```
 
+- **Pay** calls PaymentService synchronously (real Stripe test-mode charge) before flipping status.
 - **Reserve** (at checkout) only holds stock — `OnHand` is untouched.
-- **Ship** commits every line's reservation — this is the point stock actually leaves the building
-  (`OnHand` decrements). If a commit fails partway through a multi-item order, there's no
-  compensating rollback (InventoryService's commit isn't reversible) — the order stays `Paid` and
-  the error is surfaced for a retry once the underlying issue is fixed.
+- **Ship** (`ShipOrderCommandHandler`, now triggered by consuming `shipment.dispatched.v1`) commits
+  every line's reservation — this is the point stock actually leaves the building (`OnHand`
+  decrements). If a commit fails partway through a multi-item order, there's no compensating
+  rollback (InventoryService's commit isn't reversible) — the order stays `Paid` and the error is
+  logged for investigation, since there's no HTTP caller left to retry against.
+- **Deliver** (`DeliverOrderCommandHandler`) is triggered by consuming `shipment.delivered.v1`.
 - **Cancel** (only valid from `Pending`/`Paid`, i.e. pre-shipment) releases every line's reservation.
-- **Refund** (valid from `Paid`/`Shipped`/`Delivered`) deliberately does **not** touch inventory —
-  restocking a post-shipment return needs its own workflow, out of scope for now.
+- **Refund** (valid from `Paid`/`Shipped`/`Delivered`) calls PaymentService synchronously (real
+  Stripe test-mode refund) and deliberately does **not** touch inventory — restocking a
+  post-shipment return needs its own workflow, out of scope for now.
 
 ### Ownership model (known simplification)
 
@@ -61,12 +67,16 @@ staff" vs. "customer." Instead:
 - **Checkout, Pay, Cancel, Get, list-my-orders** — ownership-checked against the caller's JWT
   subject. `Get`/list return "not found" rather than "forbidden" on a mismatch, so the endpoint
   doesn't leak whether an order id exists to someone who doesn't own it.
-- **Ship, Deliver, Refund** — any authenticated caller, no ownership check. These stand in for
-  actions a back-office/fulfillment system would trigger, not the customer.
+- **Refund** — any authenticated caller, no ownership check. Stands in for an action a back-office
+  system would trigger, not the customer.
+- **Ship, Deliver** — no longer HTTP endpoints at all; see Order lifecycle above.
 
 ## Local development
 
-CartService and InventoryService must be running for checkout to succeed — see their READMEs.
+CartService and InventoryService must be running for checkout to succeed. PaymentService must be
+running for Pay/Refund to succeed. ShippingService must be running (with its own Kafka consumer
+active) for Ship/Deliver to happen at all, since there's no other trigger for them anymore. See
+each service's own README.
 
 ```bash
 # from commercecore/OrderService/
@@ -93,19 +103,20 @@ All endpoints require a valid JWT bearer token (obtained from AuthenticationServ
 - `POST /api/orders/checkout` — checks out the caller's own cart (body: `shippingAddress`)
 - `GET /api/orders/{id}` — get an order (ownership-checked)
 - `GET /api/orders/me` — the caller's own order history, paginated (`page`/`pageSize`)
-- `POST /api/orders/{id}/pay` — `Pending` → `Paid` (ownership-checked)
+- `POST /api/orders/{id}/pay` — `Pending` → `Paid` (ownership-checked; body: `paymentMethodId`; calls PaymentService)
 - `POST /api/orders/{id}/cancel` — `Pending`/`Paid` → `Cancelled`, releases reservations (ownership-checked)
-- `POST /api/orders/{id}/ship` — `Paid` → `Shipped`, commits reservations (ops action)
-- `POST /api/orders/{id}/deliver` — `Shipped` → `Delivered` (ops action)
-- `POST /api/orders/{id}/refund` — `Paid`/`Shipped`/`Delivered` → `Refunded` (ops action)
+- `POST /api/orders/{id}/refund` — `Paid`/`Shipped`/`Delivered` → `Refunded` (ops action; calls PaymentService)
+
+`Paid` → `Shipped` → `Delivered` happen automatically via Kafka — see ShippingService's README.
 
 ### Configuration
 
 Local defaults live in `appsettings.Development.json`. `Jwt:Key`/`Jwt:Issuer`/`Jwt:Audience` must
 match AuthenticationService's values exactly (copied verbatim), same local-dev-only symmetric-key
-sharing used by every other service. `CartService:BaseUrl`/`InventoryService:BaseUrl` need the same
-dual-addressing split as Minio (`http://cart-service:8080`/`http://inventory-service:8080` internal
-Docker aliases vs `http://localhost:8087`/`http://localhost:8088` local dev).
+sharing used by every other service. `CartService:BaseUrl`/`InventoryService:BaseUrl`/
+`PaymentService:BaseUrl` need the same dual-addressing split as Minio (`http://cart-service:8080`
+etc internal Docker aliases vs `http://localhost:8087` etc local dev). ShippingService isn't called
+synchronously at all — it only shows up via the shared Kafka broker/schema registry config.
 
 ## Running everything in Docker
 

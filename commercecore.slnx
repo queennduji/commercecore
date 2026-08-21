@@ -49,4 +49,40 @@
     <Project Path="OrderService/tests/OrderService.IntegrationTests/OrderService.IntegrationTests.csproj" />
     <Project Path="OrderService/tests/OrderService.UnitTests/OrderService.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/PaymentService/src/">
+    <Project Path="PaymentService/src/PaymentService.Api/PaymentService.Api.csproj" />
+    <Project Path="PaymentService/src/PaymentService.Application/PaymentService.Application.csproj" />
+    <Project Path="PaymentService/src/PaymentService.Domain/PaymentService.Domain.csproj" />
+    <Project Path="PaymentService/src/PaymentService.Infrastructure/PaymentService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/PaymentService/tests/">
+    <Project Path="PaymentService/tests/PaymentService.IntegrationTests/PaymentService.IntegrationTests.csproj" />
+    <Project Path="PaymentService/tests/PaymentService.UnitTests/PaymentService.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/ShippingService/src/">
+    <Project Path="ShippingService/src/ShippingService.Api/ShippingService.Api.csproj" />
+    <Project Path="ShippingService/src/ShippingService.Application/ShippingService.Application.csproj" />
+    <Project Path="ShippingService/src/ShippingService.Domain/ShippingService.Domain.csproj" />
+    <Project Path="ShippingService/src/ShippingService.Infrastructure/ShippingService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/ShippingService/tests/">
+    <Project Path="ShippingService/tests/ShippingService.IntegrationTests/ShippingService.IntegrationTests.csproj" />
+    <Project Path="ShippingService/tests/ShippingService.UnitTests/ShippingService.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/NotificationService/src/">
+    <Project Path="NotificationService/src/NotificationService.Api/NotificationService.Api.csproj" />
+    <Project Path="NotificationService/src/NotificationService.Application/NotificationService.Application.csproj" />
+    <Project Path="NotificationService/src/NotificationService.Domain/NotificationService.Domain.csproj" />
+    <Project Path="NotificationService/src/NotificationService.Infrastructure/NotificationService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/NotificationService/tests/">
+    <Project Path="NotificationService/tests/NotificationService.IntegrationTests/NotificationService.IntegrationTests.csproj" />
+    <Project Path="NotificationService/tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/ApiGateway/src/">
+    <Project Path="ApiGateway/src/ApiGateway.Api/ApiGateway.Api.csproj" />
+  </Folder>
+  <Folder Name="/ApiGateway/tests/">
+    <Project Path="ApiGateway/tests/ApiGateway.IntegrationTests/ApiGateway.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

@@ -32,6 +32,9 @@ public class OrderApiFixture : IAsyncLifetime
     public WebApplicationFactory<Program> Factory { get; private set; } = null!;
     public FakeCartServiceClient CartServiceClient { get; } = new();
     public FakeInventoryServiceClient InventoryServiceClient { get; } = new();
+    public FakePaymentServiceClient PaymentServiceClient { get; } = new();
+    public string KafkaBootstrapServers { get; private set; } = string.Empty;
+    public string SchemaRegistryUrl { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
@@ -66,6 +69,9 @@ public class OrderApiFixture : IAsyncLifetime
         await _schemaRegistry.StartAsync();
         await WaitForSchemaRegistryAsync();
 
+        KafkaBootstrapServers = _kafka.GetBootstrapAddress();
+        SchemaRegistryUrl = $"http://localhost:{_schemaRegistry.GetMappedPublicPort(SchemaRegistryPort)}";
+
         Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
@@ -74,13 +80,20 @@ public class OrderApiFixture : IAsyncLifetime
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:OrderDatabase"] = _postgres.GetConnectionString(),
-                    ["Kafka:BootstrapServers"] = _kafka.GetBootstrapAddress(),
-                    ["Kafka:SchemaRegistryUrl"] = $"http://localhost:{_schemaRegistry.GetMappedPublicPort(SchemaRegistryPort)}",
+                    ["Kafka:BootstrapServers"] = KafkaBootstrapServers,
+                    ["Kafka:SchemaRegistryUrl"] = SchemaRegistryUrl,
                     ["Jwt:Key"] = JwtKey,
                     ["Jwt:Issuer"] = JwtIssuer,
                     ["Jwt:Audience"] = JwtAudience,
                     ["CartService:BaseUrl"] = "http://cart-service.invalid",
-                    ["InventoryService:BaseUrl"] = "http://inventory-service.invalid"
+                    ["InventoryService:BaseUrl"] = "http://inventory-service.invalid",
+                    ["PaymentService:BaseUrl"] = "http://payment-service.invalid",
+                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // runtime, so a real collector isn't needed here. Only present because Otel
+                    // config is required at startup, same as Jwt above.
+                    ["Otel:ServiceName"] = "OrderService.Tests",
+                    ["Otel:TracesEndpoint"] = "http://127.0.0.1:1",
+                    ["Otel:LogsEndpoint"] = "http://127.0.0.1:1"
                 });
             });
 
@@ -90,6 +103,8 @@ public class OrderApiFixture : IAsyncLifetime
                 services.AddSingleton<ICartServiceClient>(CartServiceClient);
                 services.RemoveAll<IInventoryServiceClient>();
                 services.AddSingleton<IInventoryServiceClient>(InventoryServiceClient);
+                services.RemoveAll<IPaymentServiceClient>();
+                services.AddSingleton<IPaymentServiceClient>(PaymentServiceClient);
             });
         });
 

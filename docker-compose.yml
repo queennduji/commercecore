@@ -71,6 +71,90 @@ services:
       timeout: 5s
       retries: 10
 
+  # --- Observability: OpenTelemetry traces -> Jaeger, OpenTelemetry logs -> Elasticsearch/Kibana ---
+  # Every service's own docker-compose.yml points its OTLP exporters at jaeger:4317 (traces) and
+  # otel-collector:4317 (logs) — see each service's Otel__* env vars.
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    networks:
+      - commercecore
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  elasticsearch-index-init:
+    # One-shot: pre-creates the plain "commercecore-logs" index once Elasticsearch is healthy.
+    # The otel-collector's elasticsearch exporter otherwise 404s on its first bulk write — see
+    # otel-collector-config.yaml for why. No -f flag: curl's exit code only reflects network-level
+    # failure, not HTTP status, so a "already exists" 400 on a volume that survived a restart
+    # still exits 0 — idempotent by construction, no need to branch on the response.
+    image: curlimages/curl:8.11.1
+    networks:
+      - commercecore
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["curl", "-sS", "-X", "PUT", "http://elasticsearch:9200/commercecore-logs"]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    networks:
+      - commercecore
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+
+  jaeger:
+    # OTLP-native all-in-one — receives traces directly from every service, no collector needed
+    # for this signal. Ports: 16686 UI, 4317/4318 OTLP gRPC/HTTP.
+    image: jaegertracing/all-in-one:1.76.0
+    networks:
+      - commercecore
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  otel-collector:
+    # Handles only the logs signal — receives OTLP logs from every service and fans them out to
+    # Elasticsearch via the elasticsearchexporter. Traces skip this entirely and go straight to
+    # Jaeger (above), which speaks OTLP natively — one collector hop less for the common case.
+    # Host ports differ from Jaeger's (4327/4328 vs 4317/4318) since both containers listen on
+    # the standard OTLP ports 4317/4318 internally; only host-side mappings need to stay unique.
+    # Pinned below the version where the elasticsearch exporter's `mapping.mode` config key was
+    # deprecated (0.153.0) — that key is what makes it write to a plain, static-named index
+    # instead of computing its own OTel-native data-stream target and ignoring logs_index.
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    networks:
+      - commercecore
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "4327:4317"
+      - "4328:4318"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+
 networks:
   commercecore:
     name: commercecore
@@ -79,3 +163,4 @@ volumes:
   kafka-data:
   minio-data:
   redis-data:
+  elasticsearch-data:

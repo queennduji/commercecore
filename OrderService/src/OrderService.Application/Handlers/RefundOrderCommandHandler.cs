@@ -12,11 +12,16 @@ namespace OrderService.Application.Handlers;
 public class RefundOrderCommandHandler : IRequestHandler<RefundOrderCommand, ServiceResult<OrderDto>>
 {
     private readonly IOrderRepository _orderRepository;
+    private readonly IPaymentServiceClient _paymentServiceClient;
     private readonly IEventPublisher _eventPublisher;
 
-    public RefundOrderCommandHandler(IOrderRepository orderRepository, IEventPublisher eventPublisher)
+    public RefundOrderCommandHandler(
+        IOrderRepository orderRepository,
+        IPaymentServiceClient paymentServiceClient,
+        IEventPublisher eventPublisher)
     {
         _orderRepository = orderRepository;
+        _paymentServiceClient = paymentServiceClient;
         _eventPublisher = eventPublisher;
     }
 
@@ -31,6 +36,12 @@ public class RefundOrderCommandHandler : IRequestHandler<RefundOrderCommand, Ser
         if (order.Status is not (OrderStatus.Paid or OrderStatus.Shipped or OrderStatus.Delivered))
         {
             return ServiceResult<OrderDto>.Failure($"Cannot refund an order from status {order.Status}.");
+        }
+
+        var paymentResult = await _paymentServiceClient.RefundAsync(order.Id, cancellationToken);
+        if (!paymentResult.Succeeded)
+        {
+            return ServiceResult<OrderDto>.Failure(paymentResult.FailureReason ?? "Refund failed.");
         }
 
         // Deliberately does not touch inventory: restocking a post-shipment return is out of scope

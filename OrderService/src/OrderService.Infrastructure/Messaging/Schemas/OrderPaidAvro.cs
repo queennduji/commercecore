@@ -14,7 +14,8 @@ public class OrderPaidAvro : ISpecificRecord
           "fields": [
             {"name": "orderId", "type": "string"},
             {"name": "userId", "type": "string"},
-            {"name": "paidAt", "type": {"type": "long", "logicalType": "timestamp-millis"}}
+            {"name": "paidAt", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+            {"name": "shippingAddress", "type": "string", "default": ""}
           ]
         }
         """);
@@ -22,6 +23,7 @@ public class OrderPaidAvro : ISpecificRecord
     public string OrderId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public DateTime PaidAt { get; set; }
+    public string ShippingAddress { get; set; } = string.Empty;
 
     public Schema Schema => _SCHEMA;
 
@@ -30,6 +32,7 @@ public class OrderPaidAvro : ISpecificRecord
         0 => OrderId,
         1 => UserId,
         2 => PaidAt,
+        3 => ShippingAddress,
         _ => throw new AvroRuntimeException($"Bad index {fieldPos} in Get()")
     };
 
@@ -40,6 +43,7 @@ public class OrderPaidAvro : ISpecificRecord
             case 0: OrderId = (string)fieldValue; break;
             case 1: UserId = (string)fieldValue; break;
             case 2: PaidAt = (DateTime)fieldValue; break;
+            case 3: ShippingAddress = (string)fieldValue; break;
             default: throw new AvroRuntimeException($"Bad index {fieldPos} in Put()");
         }
     }

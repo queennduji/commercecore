@@ -15,11 +15,13 @@ public class RefundOrderCommandHandlerTests
     public async Task Handle_RefundableStatus_TransitionsToRefunded(OrderStatus status)
     {
         var orderRepository = Substitute.For<IOrderRepository>();
+        var paymentServiceClient = Substitute.For<IPaymentServiceClient>();
         var eventPublisher = Substitute.For<IEventPublisher>();
         var order = new Order { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), Status = status, ShippingAddress = "addr", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
         orderRepository.GetByIdAsync(order.Id, Arg.Any<CancellationToken>()).Returns(order);
+        paymentServiceClient.RefundAsync(order.Id, Arg.Any<CancellationToken>()).Returns(new PaymentResult(true, null));
 
-        var handler = new RefundOrderCommandHandler(orderRepository, eventPublisher);
+        var handler = new RefundOrderCommandHandler(orderRepository, paymentServiceClient, eventPublisher);
         var result = await handler.Handle(new RefundOrderCommand(order.Id), CancellationToken.None);
 
         Assert.True(result.Succeeded);
@@ -30,13 +32,32 @@ public class RefundOrderCommandHandlerTests
     public async Task Handle_PendingOrder_ReturnsFailure()
     {
         var orderRepository = Substitute.For<IOrderRepository>();
+        var paymentServiceClient = Substitute.For<IPaymentServiceClient>();
         var eventPublisher = Substitute.For<IEventPublisher>();
         var order = new Order { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), Status = OrderStatus.Pending, ShippingAddress = "addr", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
         orderRepository.GetByIdAsync(order.Id, Arg.Any<CancellationToken>()).Returns(order);
 
-        var handler = new RefundOrderCommandHandler(orderRepository, eventPublisher);
+        var handler = new RefundOrderCommandHandler(orderRepository, paymentServiceClient, eventPublisher);
         var result = await handler.Handle(new RefundOrderCommand(order.Id), CancellationToken.None);
 
         Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task Handle_GatewayRefundFails_ReturnsFailureAndDoesNotTransition()
+    {
+        var orderRepository = Substitute.For<IOrderRepository>();
+        var paymentServiceClient = Substitute.For<IPaymentServiceClient>();
+        var eventPublisher = Substitute.For<IEventPublisher>();
+        var order = new Order { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), Status = OrderStatus.Paid, ShippingAddress = "addr", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        orderRepository.GetByIdAsync(order.Id, Arg.Any<CancellationToken>()).Returns(order);
+        paymentServiceClient.RefundAsync(order.Id, Arg.Any<CancellationToken>()).Returns(new PaymentResult(false, "No successful payment found for this order."));
+
+        var handler = new RefundOrderCommandHandler(orderRepository, paymentServiceClient, eventPublisher);
+        var result = await handler.Handle(new RefundOrderCommand(order.Id), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(OrderStatus.Paid, order.Status);
+        await eventPublisher.DidNotReceive().PublishOrderRefundedAsync(Arg.Any<Domain.Events.OrderRefundedEvent>(), Arg.Any<CancellationToken>());
     }
 }

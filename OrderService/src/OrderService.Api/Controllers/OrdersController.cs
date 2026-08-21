@@ -9,6 +9,8 @@ namespace OrderService.Api.Controllers;
 
 public record CheckoutRequest(string ShippingAddress);
 
+public record PayRequest(string PaymentMethodId);
+
 [ApiController]
 [Route("api/orders")]
 [Authorize]
@@ -45,9 +47,9 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/pay")]
-    public async Task<IActionResult> Pay(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Pay(Guid id, PayRequest request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new MarkOrderPaidCommand(id, GetUserId()), cancellationToken);
+        var result = await _mediator.Send(new MarkOrderPaidCommand(id, GetUserId(), request.PaymentMethodId), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 
@@ -58,22 +60,12 @@ public class OrdersController : ControllerBase
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 
-    // Ship/Deliver/Refund are ops actions: any authenticated caller, no ownership check —
-    // there's no role system yet to gate these to fulfillment/back-office staff specifically.
-    [HttpPost("{id:guid}/ship")]
-    public async Task<IActionResult> Ship(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(new ShipOrderCommand(id), cancellationToken);
-        return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
-    }
-
-    [HttpPost("{id:guid}/deliver")]
-    public async Task<IActionResult> Deliver(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(new DeliverOrderCommand(id), cancellationToken);
-        return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
-    }
-
+    // Ship/Deliver used to be manual ops actions here (any authenticated caller, no ownership
+    // check). They're now driven by real fulfillment activity in ShippingService instead: this
+    // service consumes shipment.dispatched.v1/shipment.delivered.v1 (see
+    // OrderService.Infrastructure.Consumers) and dispatches ShipOrderCommand/DeliverOrderCommand
+    // itself — the handlers are unchanged, only the trigger moved from an HTTP endpoint to a Kafka
+    // consumer. Refund remains an ops action: no fulfillment system owns that transition.
     [HttpPost("{id:guid}/refund")]
     public async Task<IActionResult> Refund(Guid id, CancellationToken cancellationToken)
     {

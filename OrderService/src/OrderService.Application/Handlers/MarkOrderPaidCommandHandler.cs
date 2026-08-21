@@ -12,11 +12,16 @@ namespace OrderService.Application.Handlers;
 public class MarkOrderPaidCommandHandler : IRequestHandler<MarkOrderPaidCommand, ServiceResult<OrderDto>>
 {
     private readonly IOrderRepository _orderRepository;
+    private readonly IPaymentServiceClient _paymentServiceClient;
     private readonly IEventPublisher _eventPublisher;
 
-    public MarkOrderPaidCommandHandler(IOrderRepository orderRepository, IEventPublisher eventPublisher)
+    public MarkOrderPaidCommandHandler(
+        IOrderRepository orderRepository,
+        IPaymentServiceClient paymentServiceClient,
+        IEventPublisher eventPublisher)
     {
         _orderRepository = orderRepository;
+        _paymentServiceClient = paymentServiceClient;
         _eventPublisher = eventPublisher;
     }
 
@@ -33,6 +38,17 @@ public class MarkOrderPaidCommandHandler : IRequestHandler<MarkOrderPaidCommand,
             return ServiceResult<OrderDto>.Failure($"Cannot mark an order as paid from status {order.Status}.");
         }
 
+        var subtotal = order.Items.Sum(i => i.UnitPrice * i.Quantity);
+
+        // The platform has no multi-currency concept anywhere else (Catalog prices carry no
+        // currency), so "usd" is hardcoded here too rather than threading a currency field through
+        // every upstream service just for this.
+        var paymentResult = await _paymentServiceClient.ChargeAsync(order.Id, subtotal, "usd", request.PaymentMethodId, cancellationToken);
+        if (!paymentResult.Succeeded)
+        {
+            return ServiceResult<OrderDto>.Failure(paymentResult.FailureReason ?? "Payment failed.");
+        }
+
         var now = DateTime.UtcNow;
         order.Status = OrderStatus.Paid;
         order.UpdatedAt = now;
@@ -42,7 +58,8 @@ public class MarkOrderPaidCommandHandler : IRequestHandler<MarkOrderPaidCommand,
         {
             OrderId = order.Id,
             UserId = order.UserId,
-            PaidAt = now
+            PaidAt = now,
+            ShippingAddress = order.ShippingAddress
         }, cancellationToken);
 
         return ServiceResult<OrderDto>.Success(order.ToDto());

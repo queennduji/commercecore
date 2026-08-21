@@ -1,6 +1,7 @@
 using OrderService.Application.Behaviors;
 using OrderService.Application.Interfaces;
 using OrderService.Infrastructure.Clients;
+using OrderService.Infrastructure.Consumers;
 using OrderService.Infrastructure.Messaging;
 using OrderService.Infrastructure.Options;
 using OrderService.Infrastructure.Persistence;
@@ -20,12 +21,15 @@ public static class DependencyInjection
         services.Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.SectionName));
         services.Configure<CartServiceOptions>(configuration.GetSection(CartServiceOptions.SectionName));
         services.Configure<InventoryServiceOptions>(configuration.GetSection(InventoryServiceOptions.SectionName));
+        services.Configure<PaymentServiceOptions>(configuration.GetSection(PaymentServiceOptions.SectionName));
 
         services.AddDbContext<OrderDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("OrderDatabase")));
 
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHostedService<ShipmentDispatchedConsumer>();
+        services.AddHostedService<ShipmentDeliveredConsumer>();
 
         services.AddHttpContextAccessor();
         services.AddTransient<ForwardAuthorizationHandler>();
@@ -45,6 +49,12 @@ public static class DependencyInjection
         {
             var inventoryOptions = sp.GetRequiredService<IOptions<InventoryServiceOptions>>().Value;
             client.BaseAddress = new Uri(inventoryOptions.BaseUrl);
+        }).AddHttpMessageHandler<ForwardAuthorizationHandler>();
+
+        services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>((sp, client) =>
+        {
+            var paymentOptions = sp.GetRequiredService<IOptions<PaymentServiceOptions>>().Value;
+            client.BaseAddress = new Uri(paymentOptions.BaseUrl);
         }).AddHttpMessageHandler<ForwardAuthorizationHandler>();
 
         services.AddValidatorsFromAssembly(typeof(Application.Commands.CheckoutCommand).Assembly);

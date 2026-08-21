@@ -22,3 +22,8 @@ kafka-data/
 ## Postman VS Code extension local workspace state
 .postman/
 **/postman/globals/
+
+## Local secrets (e.g. PaymentService's Stripe test key) — never committed
+.env
+.env.*
+!.env.example
