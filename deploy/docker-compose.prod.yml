@@ -1,0 +1,360 @@
+# Production deployment — runs the CommerceCore backend on a single VM, co-located alongside
+# other unrelated services on the same box. This is a standalone, self-contained stack: unlike the
+# per-service docker-compose.yml files (which join an `external: true` "commercecore" network
+# created by the root docker-compose.yml), this file defines that network itself, since it's the
+# only compose project on this box that needs it.
+#
+# Only api-gateway (8080) and minio (9000) publish host ports — everything else is reachable
+# only from other containers on the commercecore network. nginx (outside Docker, already running
+# on this VM) reverse-proxies api.commercecore.app -> localhost:8080 and
+# media.commercecore.app -> localhost:9000; see deploy/nginx/*.conf.
+#
+# Dropped versus local dev, on purpose (see plan/README for why):
+#   - Kafka + Schema Registry -> replaced by Redpanda (arm64-native, one lightweight container
+#     instead of two JVM processes; wire- and API-compatible, so no application code changes)
+#   - Jaeger / Elasticsearch / Kibana / otel-collector (observability stack) -> not run at all.
+#     Otel__TracesEndpoint/LogsEndpoint below are left pointed at addresses nothing is listening
+#     on - NEVER unset them, every service throws UriFormatException at startup on an empty value.
+#   - NotificationService, ShippingService -> not deployed yet (see deploy/README.md)
+#
+# Secrets referenced below (${VAR}) come from deploy/.env.prod (gitignored, lives only on the
+# VM) - see deploy/.env.prod.example for the full list.
+
+services:
+  # --- Shared infra ---
+
+  redpanda:
+    image: redpandadata/redpanda:v25.1.6
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://redpanda:9092
+      - --schema-registry-addr=internal://0.0.0.0:8081
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --default-log-level=info
+    networks:
+      - commercecore
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.8.0
+    networks:
+      - commercecore
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    networks:
+      - commercecore
+    ports:
+      - "9000:9000" # nginx (media.commercecore.app) proxies to this
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # --- CatalogService ---
+
+  catalog-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${CATALOG_DB_PASSWORD}"
+      POSTGRES_DB: catalog_service
+    volumes:
+      - catalog-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  catalog-service:
+    build:
+      context: ../CatalogService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      catalog-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__CatalogDatabase: "Host=catalog-postgres;Port=5432;Database=catalog_service;Username=postgres;Password=${CATALOG_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Minio__Endpoint: "minio:9000"
+      # Public-facing - embedded directly into product image URLs returned to the browser, and
+      # used by the presign client's own outbound connection (see MinioBlobStorageService.cs).
+      # UseSSL below must be true, since this is served over HTTPS via nginx, not a bare host:port.
+      Minio__PublicBaseUrl: "media.commercecore.app"
+      Minio__AccessKey: "${MINIO_ROOT_USER}"
+      Minio__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Minio__BucketName: "catalog-product-images"
+      Minio__UseSSL: "true"
+      Redis__ConnectionString: "redis:6379"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- InventoryService ---
+
+  inventory-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${INVENTORY_DB_PASSWORD}"
+      POSTGRES_DB: inventory_service
+    volumes:
+      - inventory-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  inventory-service:
+    build:
+      context: ../InventoryService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      inventory-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__InventoryDatabase: "Host=inventory-postgres;Port=5432;Database=inventory_service;Username=postgres;Password=${INVENTORY_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- CartService (Redis-backed, no own database) ---
+
+  cart-service:
+    build:
+      context: ../CartService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Redis__ConnectionString: "redis:6379"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      CatalogService__BaseUrl: "http://catalog-service:8080"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- AuthenticationService ---
+  # Unlike every other service, Jwt__Key is NOT set at all in this service's local-dev compose
+  # file - it's sourced from appsettings.Development.json there. Its own README explicitly calls
+  # out that production must supply Jwt:Key via env/secrets store, so it's set here for the first
+  # time, using the same value every other service verifies tokens against.
+
+  auth-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${AUTH_DB_PASSWORD}"
+      POSTGRES_DB: authentication_service
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  authentication-service:
+    build:
+      context: ../AuthenticationService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__AuthDatabase: "Host=auth-postgres;Port=5432;Database=authentication_service;Username=postgres;Password=${AUTH_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- OrderService ---
+
+  order-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${ORDER_DB_PASSWORD}"
+      POSTGRES_DB: order_service
+    volumes:
+      - order-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ../OrderService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__OrderDatabase: "Host=order-postgres;Port=5432;Database=order_service;Username=postgres;Password=${ORDER_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      CartService__BaseUrl: "http://cart-service:8080"
+      InventoryService__BaseUrl: "http://inventory-service:8080"
+      PaymentService__BaseUrl: "http://payment-service:8080"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- PaymentService ---
+
+  payment-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${PAYMENT_DB_PASSWORD}"
+      POSTGRES_DB: payment_service
+    volumes:
+      - payment-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ../PaymentService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__PaymentDatabase: "Host=payment-postgres;Port=5432;Database=payment_service;Username=postgres;Password=${PAYMENT_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:?Set STRIPE_SECRET_KEY in deploy/.env.prod}"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+  # --- ApiGateway (the only backend service exposed to the internet, via nginx) ---
+
+  api-gateway:
+    build:
+      context: ../ApiGateway
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    ports:
+      - "8080:8080" # nginx (api.commercecore.app) proxies to this
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      Cors__AllowedOrigins__0: "https://commercecore.app"
+      ReverseProxy__Clusters__auth-cluster__Destinations__d1__Address: "http://authentication-service:8080"
+      ReverseProxy__Clusters__catalog-cluster__Destinations__d1__Address: "http://catalog-service:8080"
+      ReverseProxy__Clusters__inventory-cluster__Destinations__d1__Address: "http://inventory-service:8080"
+      ReverseProxy__Clusters__cart-cluster__Destinations__d1__Address: "http://cart-service:8080"
+      ReverseProxy__Clusters__order-cluster__Destinations__d1__Address: "http://order-service:8080"
+      ReverseProxy__Clusters__payment-cluster__Destinations__d1__Address: "http://payment-service:8080"
+      ReverseProxy__Clusters__shipping-cluster__Destinations__d1__Address: "http://shipping-service:8080"
+      ReverseProxy__Clusters__notification-cluster__Destinations__d1__Address: "http://notification-service:8080"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
+networks:
+  commercecore:
+    name: commercecore
+
+volumes:
+  redpanda-data:
+  redis-data:
+  minio-data:
+  catalog-postgres-data:
+  inventory-postgres-data:
+  auth-postgres-data:
+  order-postgres-data:
+  payment-postgres-data:

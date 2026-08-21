@@ -27,3 +27,4 @@ kafka-data/
 .env
 .env.*
 !.env.example
+!deploy/.env.prod.example
