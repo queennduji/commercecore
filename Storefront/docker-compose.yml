@@ -1,0 +1,25 @@
+services:
+  storefront:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time only — inlined into the client bundle by `next build`. Sourced from
+        # Storefront/.env (Compose's own env-file interpolation, separate from .env.local which
+        # only `npm run dev` reads) — copy .env.example to .env and fill both in first.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    networks:
+      - commercecore
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime-only, server-side (Server Components + app/api/auth/* Route Handlers) — the
+      # Docker-internal address, reachable because this container joins the same commercecore
+      # network ApiGateway's own docker-compose.yml joins. See src/lib/env.ts.
+      API_BASE_URL: "http://api-gateway:8080"
+
+networks:
+  commercecore:
+    external: true
+    name: commercecore
