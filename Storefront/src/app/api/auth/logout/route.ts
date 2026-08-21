@@ -8,7 +8,7 @@ export async function POST() {
   const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
 
   if (refreshToken) {
-    // Best-effort — the cookie gets cleared regardless of whether the backend revoke succeeds,
+    // Best-effort - the cookie gets cleared regardless of whether the backend revoke succeeds,
     // since the user's intent ("log me out of this browser") is satisfied either way.
     await fetch(`${env.apiBaseUrl}/api/auth/revoke`, {
       method: "POST",

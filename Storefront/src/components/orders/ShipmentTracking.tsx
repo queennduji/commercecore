@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { OrderStatus } from "@/types/order";
 
 // ShippingService only creates a shipment reactively (consuming order.paid.v1), so a
-// Pending/Cancelled/Refunded order will never have one — skip the fetch entirely for those
+// Pending/Cancelled/Refunded order will never have one - skip the fetch entirely for those
 // rather than rendering a 404 as if it were meaningful.
 const SHIPPABLE_STATUSES: readonly OrderStatus[] = ["Paid", "Shipped", "Delivered"];
 

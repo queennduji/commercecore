@@ -25,7 +25,7 @@ export async function POST() {
   }
 
   // Refresh ROTATES the token server-side (RefreshTokenCommandHandler revokes the old one and
-  // issues a new one) — the cookie must be overwritten every time, never left as-is, or the next
+  // issues a new one) - the cookie must be overwritten every time, never left as-is, or the next
   // refresh attempt would present an already-revoked token and fail.
   const tokens = (await upstream.json()) as AuthTokens;
 

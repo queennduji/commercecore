@@ -27,7 +27,7 @@ export function ShippingAddressForm({ onOrderCreated }: { onOrderCreated: (order
     setIsSubmitting(true);
     try {
       // OrderService takes one flat shippingAddress string (max 500 chars), not structured
-      // fields — the form is structured for a friendlier UX, then joined here.
+      // fields - the form is structured for a friendlier UX, then joined here.
       const shippingAddress = `${recipientName}\n${street}\n${city}, ${state} ${zip}`;
       const order = await checkout(accessToken, shippingAddress);
       onOrderCreated(order);

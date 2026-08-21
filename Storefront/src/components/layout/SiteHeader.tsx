@@ -9,7 +9,7 @@ export function SiteHeader() {
         <Link href="/" className="shrink-0 text-lg font-semibold tracking-tight">
           CommerceCore
         </Link>
-        {/* "Home" is dropped below sm — the logo already links there, and at a 375px width
+        {/* "Home" is dropped below sm - the logo already links there, and at a 375px width
             (iPhone SE and similar) fitting logo + both nav links + cart + account genuinely
             overflows the header (confirmed directly: content wants ~16px more than available).
             "Products" stays at every size since it's not reachable any other way from here. */}

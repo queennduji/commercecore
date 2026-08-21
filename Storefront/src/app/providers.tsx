@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/api/client";
 import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Created inside useState, not at module scope — a module-level singleton would leak/share
+  // Created inside useState, not at module scope - a module-level singleton would leak/share
   // cached data across requests if this ever ran on the server; useState guarantees one instance
   // per component mount (i.e. per browser tab), same as the standard TanStack Query + Next.js
   // App Router setup.
@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // TanStack Query's default retries any error 3 times — fine for a transient network
+            // TanStack Query's default retries any error 3 times - fine for a transient network
             // blip, actively wrong for a 4xx: a 404 (e.g. GET /api/orders/{id} for an order that
             // doesn't exist/isn't yours) is deterministic and will keep failing identically, so
             // retrying just delays the real error by several seconds of exponential backoff.

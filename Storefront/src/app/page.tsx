@@ -7,7 +7,7 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 const FEATURED_COUNT = 8;
 
 // Otherwise Next tries to statically prerender this page at `next build` time (it has no
-// dynamic API usage — no searchParams, no cookies), which means running its fetch calls inside
+// dynamic API usage - no searchParams, no cookies), which means running its fetch calls inside
 // the build environment itself. That's fine for a plain `npm run build` on a machine that also
 // has the gateway reachable at NEXT_PUBLIC_API_BASE_URL, but breaks inside `docker build`'s
 // isolated build container, which has no route to a live backend at all. Forcing dynamic
@@ -30,7 +30,7 @@ export default async function HomePage() {
       <section className="flex flex-col items-start gap-4 rounded-2xl bg-muted/50 p-8 sm:p-12">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Shop CommerceCore</h1>
         <p className="max-w-xl text-muted-foreground">
-          Browse the full catalog and find what you need — new arrivals and everyday essentials, all in
+          Browse the full catalog and find what you need - new arrivals and everyday essentials, all in
           one place.
         </p>
         <Link

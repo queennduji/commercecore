@@ -10,7 +10,7 @@ import { listMyOrders } from "@/lib/api/orders";
 import { OrderListRow } from "@/components/orders/OrderListRow";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// See app/cart/page.tsx for why — same shape (no cookies/searchParams/dynamic segments), same
+// See app/cart/page.tsx for why - same shape (no cookies/searchParams/dynamic segments), same
 // static-shell hydration mismatch otherwise.
 export const dynamic = "force-dynamic";
 

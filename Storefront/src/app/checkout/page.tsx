@@ -13,7 +13,7 @@ import { ShippingAddressForm } from "@/components/checkout/ShippingAddressForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrderDto } from "@/types/order";
 
-// PaymentForm reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY at render time — ssr:false keeps it out
+// PaymentForm reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY at render time - ssr:false keeps it out
 // of any server render pass entirely, so a missing key never fails a build/SSR that has nothing
 // to do with checkout. loading mirrors PaymentForm's own bordered-card shape to avoid layout
 // shift while the chunk loads.
@@ -22,7 +22,7 @@ const PaymentForm = nextDynamic(() => import("@/components/checkout/PaymentForm"
   loading: () => <Skeleton className="h-48 w-full rounded-xl" />,
 });
 
-// See app/cart/page.tsx for why — same shape (no cookies/searchParams/dynamic segments), same
+// See app/cart/page.tsx for why - same shape (no cookies/searchParams/dynamic segments), same
 // static-shell hydration mismatch otherwise.
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ export default function CheckoutPage() {
 
   function handleOrderCreated(newOrder: OrderDto) {
     // The order is created only after CheckoutCommandHandler reserves stock and clears the cart
-    // server-side — refetch now so the header badge and this page's own summary don't show a
+    // server-side - refetch now so the header badge and this page's own summary don't show a
     // now-stale cart if the shopper navigates back.
     queryClient.invalidateQueries({ queryKey: ["cart"] });
     setOrder(newOrder);

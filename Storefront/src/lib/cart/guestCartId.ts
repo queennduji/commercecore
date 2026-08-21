@@ -1,6 +1,6 @@
-// Non-httpOnly on purpose — a guest cart id isn't sensitive, and this is read/written from
+// Non-httpOnly on purpose - a guest cart id isn't sensitive, and this is read/written from
 // client components only (never needed server-side in this phase). 30 days to match
-// CartService's own Redis TTL default (RedisOptions.TtlDays) — no point outliving the cart.
+// CartService's own Redis TTL default (RedisOptions.TtlDays) - no point outliving the cart.
 const COOKIE_NAME = "cc_guest_cart_id";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 

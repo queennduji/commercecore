@@ -8,7 +8,7 @@ import { CartSummary } from "@/components/cart/CartSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Without this, Next treats this route as static-eligible (no cookies/searchParams/dynamic
-// segments) and caches its server-rendered shell — always frozen at whatever loading/empty state
+// segments) and caches its server-rendered shell - always frozen at whatever loading/empty state
 // happened to render first. The real client-side cart state (via useCart()) then resolves against
 // that stale shell instead of a fresh one, producing a genuine hydration mismatch (observed
 // directly via Next's dev overlay: server showed the loading skeleton, client showed "cart is

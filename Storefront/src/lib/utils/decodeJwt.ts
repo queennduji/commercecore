@@ -1,4 +1,4 @@
-/** Access token claims Storefront cares about — see AuthenticationService's TokenService. */
+/** Access token claims Storefront cares about - see AuthenticationService's TokenService. */
 interface AccessTokenClaims {
   sub: string;
   email: string;
@@ -7,7 +7,7 @@ interface AccessTokenClaims {
 }
 
 /**
- * Decodes a JWT's payload client-side WITHOUT verifying the signature — purely for reading
+ * Decodes a JWT's payload client-side WITHOUT verifying the signature - purely for reading
  * `email`/`sub` to display "logged in as ...". Never use this for anything security-sensitive;
  * the signature is only ever checked server-side (by each backend service).
  */

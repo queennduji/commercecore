@@ -28,7 +28,7 @@ export function CartItemRow({ item }: { item: CartItemDto }) {
   const isBusy = updateQuantity.isPending || removeItem.isPending;
 
   return (
-    // flex-col below sm, not one cramped row at every width — four columns (name/sku/price,
+    // flex-col below sm, not one cramped row at every width - four columns (name/sku/price,
     // quantity, line total, remove) squeezed into a ~370px phone width left the name column at
     // ~79px, wrapping "Ceramic Dinnerware Set" onto several lines (confirmed directly at a 375px
     // viewport). Name/price get their own full-width row; quantity/total/remove share a second

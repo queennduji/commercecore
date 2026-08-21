@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api/client";
 import { CartDto } from "@/types/cart";
 
 // Every function here is called directly from client components straight to the ApiGateway
-// (not proxied through Storefront's own server, unlike auth) — that's what the gateway's new
+// (not proxied through Storefront's own server, unlike auth) - that's what the gateway's new
 // CORS policy exists for. Cart reads/writes are anonymous by design (guest carts); `accessToken`
 // is only passed for the two `[Authorize]`-gated /me routes.
 function authHeader(accessToken?: string): HeadersInit | undefined {

@@ -20,7 +20,7 @@ export function PaymentForm({
   onCancelled: () => void;
 }) {
   // Reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (via getStripe()), so this component must never
-  // render during SSR/static generation — it's loaded with next/dynamic(..., { ssr: false }) at
+  // render during SSR/static generation - it's loaded with next/dynamic(..., { ssr: false }) at
   // its only call site (app/checkout/page.tsx) specifically so this render body only ever
   // executes in the browser, where the key is guaranteed to have been checked already.
   const stripePromise = useMemo(() => getStripe(), []);
@@ -66,7 +66,7 @@ function PaymentFormInner({
         return;
       }
 
-      // PaymentService's gateway charges with Confirm=true, OffSession=true — fully synchronous,
+      // PaymentService's gateway charges with Confirm=true, OffSession=true - fully synchronous,
       // no 3D Secure/requires_action handling needed here. A decline comes back as an ApiError
       // with Stripe's own message; the order stays Pending, so this form can just be retried.
       const paidOrder = await payOrder(accessToken, order.id, paymentMethod.id);

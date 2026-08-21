@@ -1,6 +1,6 @@
 import { Session } from "@/types/auth";
 
-// Calls to Storefront's OWN Route Handlers (app/api/auth/*), not the ApiGateway — these are the
+// Calls to Storefront's OWN Route Handlers (app/api/auth/*), not the ApiGateway - these are the
 // BFF layer that keeps the refresh token in an httpOnly cookie the client never sees. Relative
 // paths (not API_BASE_URL) since this always runs same-origin, browser-only.
 
@@ -30,7 +30,7 @@ export async function register(email: string, password: string, phoneNumber?: st
   return parseSessionOrThrow(response);
 }
 
-/** Returns null (rather than throwing) on a missing/expired session — this is the "silent" part. */
+/** Returns null (rather than throwing) on a missing/expired session - this is the "silent" part. */
 export async function refresh(): Promise<Session | null> {
   const response = await fetch("/api/auth/refresh", { method: "POST" });
   if (!response.ok) return null;
