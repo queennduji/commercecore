@@ -18,19 +18,27 @@ ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
 RUN npm run build
 
+FROM node:24-alpine AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 FROM node:24-alpine AS runtime
 WORKDIR /app
 
-# output: "standalone" (next.config.ts) traces only the files actually needed at runtime - no
-# node_modules copy needed here at all, unlike a plain `next start` deployment.
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# next.config.ts deliberately has no `output: "standalone"` (it broke the real deployment target,
+# Vercel - see that file's comment), so this is a plain `next start` runtime: needs the full
+# .next build output, public/, package.json, and production-only node_modules (built separately
+# above so devDependencies - eslint, typescript, etc. - don't bloat the image).
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
 
-# HOSTNAME=0.0.0.0 is required, not cosmetic - the standalone server.js binds to localhost only
-# by default, which is unreachable from outside the container.
+# HOSTNAME=0.0.0.0 is required, not cosmetic - `next start` binds to localhost only by default,
+# which is unreachable from outside the container.
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
