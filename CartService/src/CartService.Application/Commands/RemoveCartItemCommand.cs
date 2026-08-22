@@ -4,4 +4,5 @@ using MediatR;
 
 namespace CartService.Application.Commands;
 
-public record RemoveCartItemCommand(Guid CartId, Guid ProductId) : IRequest<ServiceResult<CartDto>>;
+/// <summary>CallerUserId: see GetCartQuery's doc comment.</summary>
+public record RemoveCartItemCommand(Guid CartId, Guid ProductId, Guid? CallerUserId) : IRequest<ServiceResult<CartDto>>;

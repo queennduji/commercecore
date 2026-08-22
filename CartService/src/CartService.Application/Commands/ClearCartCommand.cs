@@ -3,4 +3,5 @@ using MediatR;
 
 namespace CartService.Application.Commands;
 
-public record ClearCartCommand(Guid CartId) : IRequest<ServiceResult<bool>>;
+/// <summary>CallerUserId: see GetCartQuery's doc comment for why this exists.</summary>
+public record ClearCartCommand(Guid CartId, Guid? CallerUserId) : IRequest<ServiceResult<bool>>;

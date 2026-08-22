@@ -32,7 +32,7 @@ public class CartsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetCartQuery(id), cancellationToken);
+        var result = await _mediator.Send(new GetCartQuery(id, GetCallerUserIdOrNull()), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : NotFound(new { errors = result.Errors });
     }
 
@@ -40,7 +40,7 @@ public class CartsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Clear(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new ClearCartCommand(id), cancellationToken);
+        var result = await _mediator.Send(new ClearCartCommand(id, GetCallerUserIdOrNull()), cancellationToken);
         return result.Succeeded ? NoContent() : NotFound(new { errors = result.Errors });
     }
 
@@ -48,7 +48,7 @@ public class CartsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> AddItem(Guid id, AddCartItemRequest request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new AddCartItemCommand(id, request.ProductId, request.Quantity), cancellationToken);
+        var result = await _mediator.Send(new AddCartItemCommand(id, request.ProductId, request.Quantity, GetCallerUserIdOrNull()), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 
@@ -56,7 +56,7 @@ public class CartsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> UpdateItemQuantity(Guid id, Guid productId, UpdateCartItemQuantityRequest request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new UpdateCartItemQuantityCommand(id, productId, request.Quantity), cancellationToken);
+        var result = await _mediator.Send(new UpdateCartItemQuantityCommand(id, productId, request.Quantity, GetCallerUserIdOrNull()), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 
@@ -64,7 +64,7 @@ public class CartsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> RemoveItem(Guid id, Guid productId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new RemoveCartItemCommand(id, productId), cancellationToken);
+        var result = await _mediator.Send(new RemoveCartItemCommand(id, productId, GetCallerUserIdOrNull()), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 
@@ -88,6 +88,19 @@ public class CartsController : ControllerBase
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         return Guid.Parse(subject!);
+    }
+
+    /// <summary>Same claim lookup as GetUserId, but for the [AllowAnonymous] cart-by-id endpoints
+    /// below, which must keep working for a genuinely unauthenticated guest-cart request (no
+    /// token presented at all) - unlike GetUserId's callers, which are behind [Authorize] and so
+    /// can assume a valid token exists. ASP.NET Core's auth middleware still parses and validates
+    /// a *presented* bearer token even on an [AllowAnonymous] action - it just doesn't require
+    /// one - so this correctly returns the real caller identity when a valid token is sent, and
+    /// null when it isn't (or is invalid).</summary>
+    private Guid? GetCallerUserIdOrNull()
+    {
+        var subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return subject is not null && Guid.TryParse(subject, out var id) ? id : null;
     }
 }
 

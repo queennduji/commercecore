@@ -16,7 +16,7 @@ public class ClearCartCommandHandlerTests
         cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
 
         var handler = new ClearCartCommandHandler(cartRepository);
-        var result = await handler.Handle(new ClearCartCommand(cart.Id), CancellationToken.None);
+        var result = await handler.Handle(new ClearCartCommand(cart.Id, null), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         await cartRepository.Received(1).DeleteAsync(cart.Id, Arg.Any<CancellationToken>());
@@ -29,7 +29,22 @@ public class ClearCartCommandHandlerTests
         cartRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Cart?)null);
 
         var handler = new ClearCartCommandHandler(cartRepository);
-        var result = await handler.Handle(new ClearCartCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(new ClearCartCommand(Guid.NewGuid(), null), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        await cartRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_PersistentCartWrongCaller_ReturnsFailureAndDoesNotDelete()
+    {
+        var cartRepository = Substitute.For<ICartRepository>();
+        var ownerId = Guid.NewGuid();
+        var cart = new Cart { Id = ownerId, UserId = ownerId, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
+
+        var handler = new ClearCartCommandHandler(cartRepository);
+        var result = await handler.Handle(new ClearCartCommand(cart.Id, Guid.NewGuid()), CancellationToken.None);
 
         Assert.False(result.Succeeded);
         await cartRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());

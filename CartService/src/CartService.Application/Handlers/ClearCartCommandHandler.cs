@@ -17,7 +17,7 @@ public class ClearCartCommandHandler : IRequestHandler<ClearCartCommand, Service
     public async Task<ServiceResult<bool>> Handle(ClearCartCommand request, CancellationToken cancellationToken)
     {
         var cart = await _cartRepository.GetByIdAsync(request.CartId, cancellationToken);
-        if (cart is null)
+        if (cart is null || (cart.UserId is { } ownerId && ownerId != request.CallerUserId))
         {
             return ServiceResult<bool>.Failure("Cart not found.");
         }

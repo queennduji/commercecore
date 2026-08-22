@@ -22,7 +22,7 @@ public class AddCartItemCommandHandler : IRequestHandler<AddCartItemCommand, Ser
     public async Task<ServiceResult<CartDto>> Handle(AddCartItemCommand request, CancellationToken cancellationToken)
     {
         var cart = await _cartRepository.GetByIdAsync(request.CartId, cancellationToken);
-        if (cart is null)
+        if (cart is null || (cart.UserId is { } ownerId && ownerId != request.CallerUserId))
         {
             return ServiceResult<CartDto>.Failure("Cart not found.");
         }

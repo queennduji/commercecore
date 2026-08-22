@@ -69,7 +69,7 @@ public class OrdersController : ControllerBase
     [HttpPost("{id:guid}/refund")]
     public async Task<IActionResult> Refund(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new RefundOrderCommand(id), cancellationToken);
+        var result = await _mediator.Send(new RefundOrderCommand(id, GetUserId()), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 

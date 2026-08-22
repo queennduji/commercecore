@@ -25,6 +25,17 @@ public class MergeCartCommandHandler : IRequestHandler<MergeCartCommand, Service
             return ServiceResult<CartDto>.Failure("Source cart not found.");
         }
 
+        // The validator only checks SourceCartId != the caller's own id - it can't see the fetched
+        // cart's UserId, so this is where the real guard against merging (and then deleting)
+        // someone else's persistent cart has to live. Only a genuine guest cart (UserId null) is a
+        // legitimate merge source: this endpoint exists specifically for "fold the cart I was
+        // using before I logged in into my account," not for pulling in an arbitrary other user's
+        // cart by guessing their user id.
+        if (sourceCart.UserId is not null)
+        {
+            return ServiceResult<CartDto>.Failure("Source cart is not a guest cart.");
+        }
+
         var targetCart = await _cartRepository.GetByIdAsync(request.UserId, cancellationToken);
         var now = DateTime.UtcNow;
 

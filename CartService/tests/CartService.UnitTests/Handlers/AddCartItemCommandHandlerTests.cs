@@ -21,7 +21,7 @@ public class AddCartItemCommandHandlerTests
             .Returns(new CatalogProductSnapshot(productId, "SKU-1", "Widget", 9.99m, "Active"));
 
         var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
-        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 2), CancellationToken.None);
+        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 2, null), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         var item = Assert.Single(result.Value!.Items);
@@ -51,7 +51,7 @@ public class AddCartItemCommandHandlerTests
             .Returns(new CatalogProductSnapshot(productId, "SKU-1", "Widget", 9.99m, "Active"));
 
         var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
-        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 3), CancellationToken.None);
+        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 3, null), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         var item = Assert.Single(result.Value!.Items);
@@ -66,7 +66,7 @@ public class AddCartItemCommandHandlerTests
         cartRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Cart?)null);
 
         var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
-        var result = await handler.Handle(new AddCartItemCommand(Guid.NewGuid(), Guid.NewGuid(), 1), CancellationToken.None);
+        var result = await handler.Handle(new AddCartItemCommand(Guid.NewGuid(), Guid.NewGuid(), 1, null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
         await catalogServiceClient.DidNotReceive().GetProductAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
@@ -83,7 +83,7 @@ public class AddCartItemCommandHandlerTests
         catalogServiceClient.GetProductAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((CatalogProductSnapshot?)null);
 
         var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
-        var result = await handler.Handle(new AddCartItemCommand(cart.Id, Guid.NewGuid(), 1), CancellationToken.None);
+        var result = await handler.Handle(new AddCartItemCommand(cart.Id, Guid.NewGuid(), 1, null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Contains("Product not found.", result.Errors);
@@ -102,8 +102,24 @@ public class AddCartItemCommandHandlerTests
             .Returns(new CatalogProductSnapshot(productId, "SKU-1", "Widget", 9.99m, "Draft"));
 
         var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
-        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 1), CancellationToken.None);
+        var result = await handler.Handle(new AddCartItemCommand(cart.Id, productId, 1, null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task Handle_PersistentCartWrongCaller_ReturnsFailureAndDoesNotCallCatalog()
+    {
+        var cartRepository = Substitute.For<ICartRepository>();
+        var catalogServiceClient = Substitute.For<ICatalogServiceClient>();
+        var ownerId = Guid.NewGuid();
+        var cart = new Cart { Id = ownerId, UserId = ownerId, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
+
+        var handler = new AddCartItemCommandHandler(cartRepository, catalogServiceClient);
+        var result = await handler.Handle(new AddCartItemCommand(cart.Id, Guid.NewGuid(), 1, Guid.NewGuid()), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        await catalogServiceClient.DidNotReceive().GetProductAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

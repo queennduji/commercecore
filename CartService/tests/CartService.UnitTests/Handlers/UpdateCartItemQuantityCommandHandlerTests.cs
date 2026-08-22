@@ -23,7 +23,7 @@ public class UpdateCartItemQuantityCommandHandlerTests
         cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
 
         var handler = new UpdateCartItemQuantityCommandHandler(cartRepository);
-        var result = await handler.Handle(new UpdateCartItemQuantityCommand(cart.Id, productId, 5), CancellationToken.None);
+        var result = await handler.Handle(new UpdateCartItemQuantityCommand(cart.Id, productId, 5, null), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.Equal(5, result.Value!.Items.Single().Quantity);
@@ -36,7 +36,7 @@ public class UpdateCartItemQuantityCommandHandlerTests
         cartRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Cart?)null);
 
         var handler = new UpdateCartItemQuantityCommandHandler(cartRepository);
-        var result = await handler.Handle(new UpdateCartItemQuantityCommand(Guid.NewGuid(), Guid.NewGuid(), 5), CancellationToken.None);
+        var result = await handler.Handle(new UpdateCartItemQuantityCommand(Guid.NewGuid(), Guid.NewGuid(), 5, null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
     }
@@ -49,7 +49,7 @@ public class UpdateCartItemQuantityCommandHandlerTests
         cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
 
         var handler = new UpdateCartItemQuantityCommandHandler(cartRepository);
-        var result = await handler.Handle(new UpdateCartItemQuantityCommand(cart.Id, Guid.NewGuid(), 5), CancellationToken.None);
+        var result = await handler.Handle(new UpdateCartItemQuantityCommand(cart.Id, Guid.NewGuid(), 5, null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
     }

@@ -4,4 +4,5 @@ using MediatR;
 
 namespace CartService.Application.Commands;
 
-public record UpdateCartItemQuantityCommand(Guid CartId, Guid ProductId, int Quantity) : IRequest<ServiceResult<CartDto>>;
+/// <summary>CallerUserId: see GetCartQuery's doc comment.</summary>
+public record UpdateCartItemQuantityCommand(Guid CartId, Guid ProductId, int Quantity, Guid? CallerUserId) : IRequest<ServiceResult<CartDto>>;

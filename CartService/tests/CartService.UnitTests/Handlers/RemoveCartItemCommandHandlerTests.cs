@@ -23,7 +23,7 @@ public class RemoveCartItemCommandHandlerTests
         cartRepository.GetByIdAsync(cart.Id, Arg.Any<CancellationToken>()).Returns(cart);
 
         var handler = new RemoveCartItemCommandHandler(cartRepository);
-        var result = await handler.Handle(new RemoveCartItemCommand(cart.Id, productId), CancellationToken.None);
+        var result = await handler.Handle(new RemoveCartItemCommand(cart.Id, productId, null), CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.Empty(result.Value!.Items);
@@ -36,7 +36,7 @@ public class RemoveCartItemCommandHandlerTests
         cartRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Cart?)null);
 
         var handler = new RemoveCartItemCommandHandler(cartRepository);
-        var result = await handler.Handle(new RemoveCartItemCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(new RemoveCartItemCommand(Guid.NewGuid(), Guid.NewGuid(), null), CancellationToken.None);
 
         Assert.False(result.Succeeded);
     }

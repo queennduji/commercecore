@@ -82,4 +82,25 @@ public class MergeCartCommandHandlerTests
 
         Assert.False(result.Succeeded);
     }
+
+    [Fact]
+    public async Task Handle_SourceCartBelongsToAnotherUser_ReturnsFailureAndDoesNotMergeOrDelete()
+    {
+        // The actual vulnerability this guards: SourceCartId is fully client-supplied, and an
+        // authenticated user's cart id equals their own user id - without this check, an attacker
+        // could pass a victim's user id as SourceCartId to copy the victim's cart contents into
+        // their own cart and have the victim's real cart deleted.
+        var cartRepository = Substitute.For<ICartRepository>();
+        var callerId = Guid.NewGuid();
+        var victimId = Guid.NewGuid();
+        var victimCart = new Cart { Id = victimId, UserId = victimId, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        cartRepository.GetByIdAsync(victimId, Arg.Any<CancellationToken>()).Returns(victimCart);
+
+        var handler = new MergeCartCommandHandler(cartRepository);
+        var result = await handler.Handle(new MergeCartCommand(callerId, victimId), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        await cartRepository.DidNotReceive().SaveAsync(Arg.Any<Cart>(), Arg.Any<CancellationToken>());
+        await cartRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 }
