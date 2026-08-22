@@ -17,7 +17,7 @@ export function PaymentForm({
 }: {
   order: OrderDto;
   onPaid: (order: OrderDto) => void;
-  onCancelled: () => void;
+  onCancelled: (order: OrderDto) => void;
 }) {
   // Reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (via getStripe()), so this component must never
   // render during SSR/static generation - it's loaded with next/dynamic(..., { ssr: false }) at
@@ -39,7 +39,7 @@ function PaymentFormInner({
 }: {
   order: OrderDto;
   onPaid: (order: OrderDto) => void;
-  onCancelled: () => void;
+  onCancelled: (order: OrderDto) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -83,8 +83,8 @@ function PaymentFormInner({
     setError(null);
     setIsCancelling(true);
     try {
-      await cancelOrder(accessToken, order.id);
-      onCancelled();
+      const cancelledOrder = await cancelOrder(accessToken, order.id);
+      onCancelled(cancelledOrder);
     } catch {
       setError("Could not cancel this order. Please try again.");
     } finally {

@@ -77,6 +77,9 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10 sm:px-6">
         <h1 className="text-2xl font-semibold tracking-tight">Checkout</h1>
+        {/* onCancelled hands back the cancelled OrderDto (order/[id]/page.tsx uses it to update
+            its own cache in place) - this page shows a dedicated "cancelled" screen instead, so
+            it has no use for the value. */}
         <PaymentForm order={order} onPaid={handlePaid} onCancelled={() => setCancelled(true)} />
       </div>
     );

@@ -2,8 +2,9 @@
 
 import { use, useEffect } from "react";
 import Link from "next/link";
+import nextDynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { ApiError } from "@/lib/api/client";
@@ -13,12 +14,22 @@ import { Badge } from "@/components/ui/badge";
 import { ShipmentTracking } from "@/components/orders/ShipmentTracking";
 import { ProductPrice } from "@/components/product/ProductPrice";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OrderDto } from "@/types/order";
+
+// Same reasoning as app/checkout/page.tsx: PaymentForm reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+// at render time, so it must never be part of a server render pass - ssr:false plus a matching
+// skeleton avoids both a build-time failure and layout shift while the chunk loads.
+const PaymentForm = nextDynamic(() => import("@/components/checkout/PaymentForm").then((m) => m.PaymentForm), {
+  ssr: false,
+  loading: () => <Skeleton className="h-48 w-full rounded-xl" />,
+});
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { accessToken, isLoading: authLoading } = useAuth();
   const hasMounted = useHasMounted();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!authLoading && !accessToken) {
@@ -31,6 +42,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     queryFn: () => getOrder(accessToken!, id),
     enabled: Boolean(accessToken),
   });
+
+  // PaymentForm hands back the fresh OrderDto from the pay/cancel response directly - seed the
+  // cache with it instead of refetching, so the status badge and the payment card's disappearance
+  // happen in the same render with no round-trip. The orders list is a separate query (and might
+  // not even be mounted right now), so that one just gets invalidated for whenever it's next seen.
+  function handleOrderUpdated(updatedOrder: OrderDto) {
+    queryClient.setQueryData(["order", id], updatedOrder);
+    queryClient.invalidateQueries({ queryKey: ["orders"] });
+  }
 
   if (!hasMounted || authLoading || !accessToken || isLoading) {
     return (
@@ -102,6 +122,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <h2 className="text-sm font-semibold">Shipping address</h2>
         <p className="whitespace-pre-line text-sm text-muted-foreground">{order.shippingAddress}</p>
       </div>
+
+      {order.status === "Pending" && (
+        <PaymentForm order={order} onPaid={handleOrderUpdated} onCancelled={handleOrderUpdated} />
+      )}
 
       <ShipmentTracking orderId={order.id} orderStatus={order.status} accessToken={accessToken} />
 
