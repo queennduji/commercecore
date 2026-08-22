@@ -326,8 +326,14 @@ services:
     restart: unless-stopped
 
   # --- ApiGateway (the only backend service exposed to the internet, via nginx) ---
-
-  api-gateway:
+  # Named cc-api-gateway, not api-gateway: this box also runs a different project (atlas-bank)
+  # whose own compose file has a same-named "api-gateway" service. Its nginx has to join this
+  # commercecore network to reach this container by name (see deploy/README.md) - a container
+  # attached to two networks that both alias the same hostname to different targets is real,
+  # version-dependent Docker DNS ambiguity, not just a cosmetic clash. Every other service name
+  # here (catalog-service, minio, etc.) was checked against atlas-bank's compose file too and
+  # doesn't collide.
+  cc-api-gateway:
     build:
       context: ../ApiGateway
       dockerfile: Dockerfile

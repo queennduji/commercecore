@@ -36,7 +36,7 @@ they show a static "Preparing your order for shipment" message instead of live t
    First build takes a while (9 .NET images + Redpanda + Postgres pulls). Watch it come up:
    ```bash
    docker compose -f deploy/docker-compose.prod.yml ps
-   docker compose -f deploy/docker-compose.prod.yml logs -f api-gateway
+   docker compose -f deploy/docker-compose.prod.yml logs -f cc-api-gateway
    ```
 
 4. **Smoke-test locally on the VM**, before any public DNS points here:
@@ -87,15 +87,25 @@ Once you have a real EasyPost API key:
    `Jwt__Key`/Kafka/Otel treatment) plus `EasyPost__ApiKey: "${EASYPOST_API_KEY}"` - see
    `ShippingService/docker-compose.yml` for its exact env var names.
 2. Add `EASYPOST_API_KEY=` to `deploy/.env.prod` (and `.env.prod.example`).
-3. Redeploy with the same `up -d --build` command above - `api-gateway`'s
+3. Redeploy with the same `up -d --build` command above - `cc-api-gateway`'s
    `shipping-cluster` route is already configured to find it at `http://shipping-service:8080`
    once that container exists.
 
 ## Notes
 
 - The `commercecore` Docker network here is created **by this compose file** (not `external:
-  true` like the per-service dev compose files) since this is the only compose project on the box
-  that needs it - see the comment at the top of `docker-compose.prod.yml`.
+  true` like the per-service dev compose files) since this compose project creates it first - see
+  the comment at the top of `docker-compose.prod.yml`. If this VM also runs a separate project
+  behind its own nginx (as it did when this was built - see atlas-bank's own compose/nginx setup),
+  that nginx needs to join this network too (as an `external: true` reference, since this file
+  creates it) to reach `cc-api-gateway`/`minio` by name for reverse-proxying.
+- The ApiGateway service here is named `cc-api-gateway`, not the more natural `api-gateway` -
+  a sibling project on the same box had already claimed that exact name in its own compose file.
+  A container joined to both networks doing a DNS lookup for a name both networks alias
+  differently is genuinely ambiguous (Docker's embedded DNS resolution order across multiple
+  networks isn't something to rely on), so this avoids the collision outright rather than hoping
+  it resolves to the right one. Check any other project sharing this box for name clashes before
+  reusing bare/common service names (`redis`, `postgres`, etc.) here too.
 - `Otel__TracesEndpoint`/`Otel__LogsEndpoint` are left pointed at `jaeger:4317`/
   `otel-collector:4317` even though nothing is listening there - this is intentional (see the
   compose file's top comment), not a leftover to clean up. Never blank these out.
