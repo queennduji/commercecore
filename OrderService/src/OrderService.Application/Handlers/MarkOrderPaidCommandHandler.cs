@@ -14,23 +14,44 @@ public class MarkOrderPaidCommandHandler : IRequestHandler<MarkOrderPaidCommand,
     private readonly IOrderRepository _orderRepository;
     private readonly IPaymentServiceClient _paymentServiceClient;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IOrderPaymentLock _orderPaymentLock;
 
     public MarkOrderPaidCommandHandler(
         IOrderRepository orderRepository,
         IPaymentServiceClient paymentServiceClient,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        IOrderPaymentLock orderPaymentLock)
     {
         _orderRepository = orderRepository;
         _paymentServiceClient = paymentServiceClient;
         _eventPublisher = eventPublisher;
+        _orderPaymentLock = orderPaymentLock;
     }
 
     public async Task<ServiceResult<OrderDto>> Handle(MarkOrderPaidCommand request, CancellationToken cancellationToken)
     {
+        // Serializes every /pay attempt for this order - across all OrderService instances, not
+        // just this process - so a concurrent duplicate request waits here instead of racing the
+        // status check below. Without this, two concurrent requests could both read Pending before
+        // either committed Paid, and both would go on to call PaymentService concurrently -
+        // PaymentService's own lock/idempotency-key/constraint chain already makes that safe
+        // against an actual double-charge, but this closes the race at its source instead of
+        // relying solely on the downstream service to absorb it.
+        await using var _ = await _orderPaymentLock.AcquireAsync(request.OrderId, cancellationToken);
+
         var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
         if (order is null || order.UserId != request.UserId)
         {
             return ServiceResult<OrderDto>.Failure("Order not found.");
+        }
+
+        // Already reached the exact state this command is trying to reach - most likely a
+        // duplicate/retried request that waited on the lock above while an earlier one finished.
+        // Treat as success (idempotent), not an error: the order genuinely is paid, which is what
+        // the caller asked for.
+        if (order.Status == OrderStatus.Paid)
+        {
+            return ServiceResult<OrderDto>.Success(order.ToDto());
         }
 
         if (order.Status != OrderStatus.Pending)

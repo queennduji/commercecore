@@ -2,6 +2,7 @@ using OrderService.Application.Behaviors;
 using OrderService.Application.Interfaces;
 using OrderService.Infrastructure.Clients;
 using OrderService.Infrastructure.Consumers;
+using OrderService.Infrastructure.Locking;
 using OrderService.Infrastructure.Messaging;
 using OrderService.Infrastructure.Options;
 using OrderService.Infrastructure.Persistence;
@@ -29,6 +30,10 @@ public static class DependencyInjection
 
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        // Mirrors PaymentService's IOrderChargeLock registration - see
+        // PostgresAdvisoryOrderPaymentLock and MarkOrderPaidCommandHandler for why.
+        services.AddScoped<IOrderPaymentLock, PostgresAdvisoryOrderPaymentLock>();
         services.AddHostedService<ShipmentDispatchedConsumer>();
         services.AddHostedService<ShipmentDeliveredConsumer>();
 
