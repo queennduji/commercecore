@@ -22,7 +22,7 @@ public class MinioBlobStorageService : IBlobStorageService, IDisposable
         _presignClient = new MinioClient()
             .WithEndpoint(_options.PublicBaseUrl)
             .WithCredentials(_options.AccessKey, _options.SecretKey)
-            .WithSSL(_options.UseSSL)
+            .WithSSL(_options.PublicUseSSL)
             .Build();
     }
 
@@ -41,7 +41,7 @@ public class MinioBlobStorageService : IBlobStorageService, IDisposable
 
     public string GetPublicUrl(string objectKey)
     {
-        var scheme = _options.UseSSL ? "https" : "http";
+        var scheme = _options.PublicUseSSL ? "https" : "http";
         return $"{scheme}://{_options.PublicBaseUrl}/{_options.BucketName}/{objectKey}";
     }
 

@@ -42,6 +42,7 @@ services:
       Minio__SecretKey: "minioadmin"
       Minio__BucketName: "catalog-product-images"
       Minio__UseSSL: "false"
+      Minio__PublicUseSSL: "false"
       Redis__ConnectionString: "redis:6379"
       Otel__TracesEndpoint: "http://jaeger:4317"
       Otel__LogsEndpoint: "http://otel-collector:4317"
