@@ -17,16 +17,21 @@ public class TokenService : ITokenService
         _options = options.Value;
     }
 
-    public (string AccessToken, DateTime ExpiresAt) GenerateAccessToken(Guid userId, string email)
+    public (string AccessToken, DateTime ExpiresAt) GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles)
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(_options.AccessTokenMinutes);
 
-        var claims = new[]
+        // ClaimTypes.Role, not a short "role" string: that's the exact claim type
+        // TokenValidationParameters.RoleClaimType defaults to, so every consuming service's
+        // [Authorize(Roles = "...")] / User.IsInRole(...) recognizes this with no per-service
+        // config needed - same convention ASP.NET Core Identity's own claims factory uses.
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(JwtRegisteredClaimNames.Email, email),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var key = new SymmetricSecurityKey(Convert.FromBase64String(_options.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

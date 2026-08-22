@@ -17,7 +17,7 @@ public class ProductImagesController : ControllerBase
     }
 
     [HttpPost("upload-url")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> RequestUploadUrl(Guid productId, [FromBody] RequestProductImageUploadCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command with { ProductId = productId }, cancellationToken);
@@ -25,7 +25,7 @@ public class ProductImagesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Attach(Guid productId, [FromBody] AttachProductImageCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command with { ProductId = productId }, cancellationToken);
@@ -33,7 +33,7 @@ public class ProductImagesController : ControllerBase
     }
 
     [HttpDelete("{imageId:guid}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid productId, Guid imageId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteProductImageCommand(productId, imageId), cancellationToken);

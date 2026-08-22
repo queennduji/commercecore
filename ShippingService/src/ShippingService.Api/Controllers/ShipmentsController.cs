@@ -35,10 +35,11 @@ public class ShipmentsController : ControllerBase
         return result.Succeeded ? Ok(result.Value) : NotFound(new { errors = result.Errors });
     }
 
-    // Ops actions — any authenticated caller, no ownership check (mirrors OrderService's former
-    // Ship/Deliver actions and PaymentService's Refund: no role system exists yet to gate these to
-    // fulfillment staff specifically).
+    // Ops actions — gated to fulfillment/admin staff via role, not an ownership check (these
+    // aren't a customer acting on their own shipment). Previously any authenticated caller could
+    // reach these, back when no role system existed yet.
     [HttpPost("{id:guid}/dispatch")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Dispatch(Guid id, DispatchRequest request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DispatchShipmentCommand(id, request.Carrier, request.TrackingCode), cancellationToken);
@@ -46,6 +47,7 @@ public class ShipmentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/refresh-tracking")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> RefreshTracking(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new RefreshShipmentTrackingCommand(id), cancellationToken);

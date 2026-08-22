@@ -33,9 +33,12 @@ public class PaymentsController : ControllerBase
             : BadRequest(new { errors = result.Errors });
     }
 
-    // Ops action — called by OrderService's own ops-only Refund transition, no ownership check
-    // here either (mirrors Order's Ship/Deliver/Refund pattern).
+    // Ops action — called by OrderService's own ops-only (Admin-role-gated) Refund transition.
+    // Role-gated here too, independently: this endpoint is directly reachable through the
+    // gateway, not only via OrderService's forwarded call, so it needed its own enforcement
+    // rather than relying on the caller having already checked.
     [HttpPost("refund")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Refund(RefundRequest request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new RefundCommand(request.OrderId), cancellationToken);

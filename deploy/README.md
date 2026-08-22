@@ -28,6 +28,7 @@ they show a static "Preparing your order for shipment" message instead of live t
    For `MINIO_ROOT_USER`, any short identifier is fine (e.g. `commercecore-prod`). For
    `STRIPE_SECRET_KEY`, reuse the existing test-mode key in `PaymentService/.env`
    (`sk_test_...`) - same Stripe account as the `pk_test_...` key already wired into Storefront.
+   For `ADMIN_EMAIL`, see "Becoming an admin" below - can be left blank and set later.
 
 3. **Start the stack**:
    ```bash
@@ -90,6 +91,31 @@ Once you have a real EasyPost API key:
 3. Redeploy with the same `up -d --build` command above - `cc-api-gateway`'s
    `shipping-cluster` route is already configured to find it at `http://shipping-service:8080`
    once that container exists.
+
+## Becoming an admin
+
+Product/category/inventory writes and refunds (CatalogService's Products/Categories/
+ProductImages controllers, InventoryService's Locations controller and the `/adjust` endpoint,
+OrderService's `/refund`, PaymentService's `/refund`, ShippingService's `/dispatch` and
+`/refresh-tracking`) all require the `Admin` role - a normal registered customer account can't
+reach them. There's no admin-management UI; the only way to grant it is:
+
+1. Set `ADMIN_EMAIL` in `deploy/.env.prod` to the email you'll register (or already registered)
+   with.
+2. Redeploy `authentication-service` so it picks up the new env var:
+   ```bash
+   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d authentication-service
+   ```
+3. If that email is **already registered**, the role is assigned automatically the moment
+   `authentication-service` starts (its `AdminRoleSeeder` runs once at startup) - no action
+   needed beyond the redeploy above. Log out and back in afterward (or just wait for your access
+   token to naturally refresh) so your JWT picks up the new role claim.
+4. If that email **hasn't registered yet**, register normally through the Storefront - the role
+   is assigned immediately as part of registration, no restart needed.
+
+`ADMIN_EMAIL` currently supports exactly one address (`Admin__Emails__0` under the hood). For
+more than one admin, add `Admin__Emails__1`, `Admin__Emails__2`, etc. as additional `environment:`
+entries on `authentication-service` in `docker-compose.prod.yml`, following the same pattern.
 
 ## Notes
 

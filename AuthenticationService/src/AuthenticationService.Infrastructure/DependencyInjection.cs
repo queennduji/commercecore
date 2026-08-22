@@ -6,6 +6,7 @@ using AuthenticationService.Infrastructure.Messaging;
 using AuthenticationService.Infrastructure.Options;
 using AuthenticationService.Infrastructure.Persistence;
 using AuthenticationService.Infrastructure.Services;
+using AuthenticationService.Infrastructure.Startup;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -22,6 +23,7 @@ public static class DependencyInjection
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.SectionName));
+        services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.SectionName));
 
         services.AddDbContext<AuthDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("AuthDatabase")));
@@ -40,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<TokenIssuer>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHostedService<AdminRoleSeeder>();
 
         services.AddValidatorsFromAssembly(typeof(Application.Commands.RegisterCommand).Assembly);
 

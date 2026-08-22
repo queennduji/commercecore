@@ -7,12 +7,9 @@ namespace OrderService.Application.Commands;
 /// <summary>Ops action (see ShipOrderCommand). Valid from Paid/Shipped/Delivered — deliberately
 /// does not touch inventory (restocking a post-shipment return is out of scope for now).
 ///
-/// UserId here is an interim tightening, not the real fix for an "ops action" - it stops the
-/// concrete vulnerability (any authenticated customer could refund any other customer's order by
-/// guessing/learning its id, since this previously had no ownership check at all) using the same
-/// caller-must-own-the-order pattern already used by Pay/Cancel. It doesn't fully match the intent
-/// in the comment above ("ops action" implies staff acting on someone else's order, not the
-/// customer themselves) - that needs real role-based authorization, which this codebase doesn't
-/// have yet (Identity's role tables exist but nothing assigns or checks a role anywhere). Revisit
-/// once that exists.</summary>
-public record RefundOrderCommand(Guid OrderId, Guid UserId) : IRequest<ServiceResult<OrderDto>>;
+/// No UserId/ownership check here on purpose: authorization for this one is enforced at the
+/// controller via [Authorize(Roles = "Admin")], not by comparing against the order's owner - an
+/// admin refunding a customer's order was never going to *be* that order's owner. (An interim
+/// version of this command briefly required UserId == order.UserId, before Admin-role
+/// infrastructure existed; removed now that it does.)</summary>
+public record RefundOrderCommand(Guid OrderId) : IRequest<ServiceResult<OrderDto>>;

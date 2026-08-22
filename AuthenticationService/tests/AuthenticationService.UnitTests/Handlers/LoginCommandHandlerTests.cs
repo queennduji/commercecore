@@ -19,7 +19,7 @@ public class LoginCommandHandlerTests
         out IEventPublisher eventPublisher)
     {
         var tokenService = Substitute.For<ITokenService>();
-        tokenService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>())
+        tokenService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IEnumerable<string>>())
             .Returns(("access-token", DateTime.UtcNow.AddMinutes(15)));
         tokenService.GenerateRefreshToken().Returns("refresh-token");
 
@@ -27,7 +27,7 @@ public class LoginCommandHandlerTests
         eventPublisher = Substitute.For<IEventPublisher>();
 
         var jwtOptions = Options.Create(new JwtOptions { RefreshTokenDays = 7 });
-        var tokenIssuer = new TokenIssuer(tokenService, refreshTokenRepository, jwtOptions);
+        var tokenIssuer = new TokenIssuer(tokenService, refreshTokenRepository, userManager, jwtOptions);
 
         return new LoginCommandHandler(userManager, tokenIssuer, eventPublisher);
     }

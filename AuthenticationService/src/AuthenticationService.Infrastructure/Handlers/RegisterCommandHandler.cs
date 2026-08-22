@@ -4,9 +4,11 @@ using AuthenticationService.Application.Dtos;
 using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Domain.Events;
 using AuthenticationService.Infrastructure.Identity;
+using AuthenticationService.Infrastructure.Options;
 using AuthenticationService.Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace AuthenticationService.Infrastructure.Handlers;
 
@@ -15,12 +17,18 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ServiceRe
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly TokenIssuer _tokenIssuer;
     private readonly IEventPublisher _eventPublisher;
+    private readonly AdminOptions _adminOptions;
 
-    public RegisterCommandHandler(UserManager<ApplicationUser> userManager, TokenIssuer tokenIssuer, IEventPublisher eventPublisher)
+    public RegisterCommandHandler(
+        UserManager<ApplicationUser> userManager,
+        TokenIssuer tokenIssuer,
+        IEventPublisher eventPublisher,
+        IOptions<AdminOptions> adminOptions)
     {
         _userManager = userManager;
         _tokenIssuer = tokenIssuer;
         _eventPublisher = eventPublisher;
+        _adminOptions = adminOptions.Value;
     }
 
     public async Task<ServiceResult<AuthTokens>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -42,6 +50,14 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ServiceRe
         if (!createResult.Succeeded)
         {
             return ServiceResult<AuthTokens>.Failure(createResult.Errors.Select(e => e.Description).ToArray());
+        }
+
+        // Covers registering for the first time with a configured admin email - AdminRoleSeeder
+        // only catches already-registered users at startup, so without this a fresh admin
+        // registration wouldn't get the role until the next restart.
+        if (_adminOptions.Emails.Any(adminEmail => string.Equals(adminEmail, user.Email, StringComparison.OrdinalIgnoreCase)))
+        {
+            await _userManager.AddToRoleAsync(user, AdminOptions.RoleName);
         }
 
         var tokens = await _tokenIssuer.IssueTokensAsync(user, cancellationToken);

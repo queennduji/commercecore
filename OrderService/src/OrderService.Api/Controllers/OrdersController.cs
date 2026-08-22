@@ -65,11 +65,14 @@ public class OrdersController : ControllerBase
     // service consumes shipment.dispatched.v1/shipment.delivered.v1 (see
     // OrderService.Infrastructure.Consumers) and dispatches ShipOrderCommand/DeliverOrderCommand
     // itself — the handlers are unchanged, only the trigger moved from an HTTP endpoint to a Kafka
-    // consumer. Refund remains an ops action: no fulfillment system owns that transition.
+    // consumer. Refund remains an ops action: real role-gating now (an interim ownership check
+    // lived here briefly, before role infrastructure existed - removed now that it does, since an
+    // admin refunding a customer's order was never going to *be* that order's owner).
     [HttpPost("{id:guid}/refund")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Refund(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new RefundOrderCommand(id, GetUserId()), cancellationToken);
+        var result = await _mediator.Send(new RefundOrderCommand(id), cancellationToken);
         return result.Succeeded ? Ok(result.Value) : BadRequest(new { errors = result.Errors });
     }
 

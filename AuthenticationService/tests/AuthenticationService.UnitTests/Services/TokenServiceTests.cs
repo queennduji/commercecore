@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using AuthenticationService.Infrastructure.Options;
 using AuthenticationService.Infrastructure.Services;
 using Microsoft.Extensions.Options;
@@ -27,7 +28,7 @@ public class TokenServiceTests
         var tokenService = CreateTokenService(accessTokenMinutes: 15);
         var userId = Guid.NewGuid();
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(userId, "claims@example.com");
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(userId, "claims@example.com", []);
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
         Assert.Equal(userId.ToString(), jwt.Claims.Single(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
@@ -36,6 +37,24 @@ public class TokenServiceTests
         Assert.Equal("CommerceCore.Tests", jwt.Audiences.Single());
         Assert.True(Math.Abs((jwt.ValidTo - expiresAt).TotalSeconds) < 2);
         Assert.True(Math.Abs((expiresAt - DateTime.UtcNow.AddMinutes(15)).TotalSeconds) < 2);
+        Assert.DoesNotContain(jwt.Claims, c => c.Type == ClaimTypes.Role);
+    }
+
+    [Fact]
+    public void GenerateAccessToken_WithRoles_EmitsOneClaimTypesRoleClaimPerRole()
+    {
+        // ClaimTypes.Role specifically (not a short "role" string) matters: it's what
+        // TokenValidationParameters.RoleClaimType defaults to across every service, which is what
+        // makes [Authorize(Roles = "...")] recognize these claims with zero extra per-service
+        // config. This test is the thing that would catch a regression to a short claim name.
+        var tokenService = CreateTokenService();
+        var userId = Guid.NewGuid();
+
+        var (accessToken, _) = tokenService.GenerateAccessToken(userId, "admin@example.com", ["Admin", "Support"]);
+
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+        var roleClaims = jwt.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+        Assert.Equal(["Admin", "Support"], roleClaims);
     }
 
     [Fact]

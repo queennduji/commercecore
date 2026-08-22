@@ -34,7 +34,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(CreateLocationCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
@@ -44,7 +44,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLocationCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command with { Id = id }, cancellationToken);
@@ -52,7 +52,7 @@ public class LocationsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeactivateLocationCommand(id), cancellationToken);

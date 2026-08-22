@@ -237,6 +237,10 @@ services:
       Jwt__Key: "${JWT_KEY}"
       Jwt__Issuer: "CommerceCore.AuthenticationService"
       Jwt__Audience: "CommerceCore"
+      # Whoever registers (or already registered) with this email gets the Admin role - the only
+      # account with write access to the catalog/inventory/refund endpoints. See
+      # deploy/README.md's "Becoming an admin" section. Empty by default (no admins) if unset.
+      Admin__Emails__0: "${ADMIN_EMAIL}"
       Otel__TracesEndpoint: "http://jaeger:4317"
       Otel__LogsEndpoint: "http://otel-collector:4317"
     restart: unless-stopped

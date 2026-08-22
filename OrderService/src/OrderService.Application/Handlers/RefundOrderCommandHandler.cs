@@ -28,7 +28,7 @@ public class RefundOrderCommandHandler : IRequestHandler<RefundOrderCommand, Ser
     public async Task<ServiceResult<OrderDto>> Handle(RefundOrderCommand request, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
-        if (order is null || order.UserId != request.UserId)
+        if (order is null)
         {
             return ServiceResult<OrderDto>.Failure("Order not found.");
         }

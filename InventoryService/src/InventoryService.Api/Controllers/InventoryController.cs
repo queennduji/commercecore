@@ -46,8 +46,10 @@ public class InventoryController : ControllerBase
         return result.Succeeded ? Ok(result.Value) : NotFound(new { errors = result.Errors });
     }
 
+    // Manual stock correction/restocking - admin-only, unlike Reserve/Release/Commit below (those
+    // are triggered by any customer's own checkout flow via OrderService, not an admin action).
     [HttpPost("adjust")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Adjust(AdjustStockCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);

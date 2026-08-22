@@ -17,13 +17,13 @@ public class RefreshTokenCommandHandlerTests
     private static (RefreshTokenCommandHandler Handler, IRefreshTokenRepository Repository) CreateHandler(UserManager<ApplicationUser> userManager)
     {
         var tokenService = Substitute.For<ITokenService>();
-        tokenService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>())
+        tokenService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IEnumerable<string>>())
             .Returns(("new-access-token", DateTime.UtcNow.AddMinutes(15)));
         tokenService.GenerateRefreshToken().Returns("new-refresh-token");
 
         var refreshTokenRepository = Substitute.For<IRefreshTokenRepository>();
         var jwtOptions = Options.Create(new JwtOptions { RefreshTokenDays = 7 });
-        var tokenIssuer = new TokenIssuer(tokenService, refreshTokenRepository, jwtOptions);
+        var tokenIssuer = new TokenIssuer(tokenService, refreshTokenRepository, userManager, jwtOptions);
 
         var handler = new RefreshTokenCommandHandler(userManager, tokenIssuer, refreshTokenRepository);
         return (handler, refreshTokenRepository);
