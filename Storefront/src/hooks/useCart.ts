@@ -85,7 +85,7 @@ export function useCart() {
   const addItem = useMutation({
     mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
       const cartId = await resolveCartId();
-      return cartApi.addItem(cartId, productId, quantity);
+      return cartApi.addItem(cartId, productId, quantity, accessToken ?? undefined);
     },
     onSuccess: invalidate,
   });
@@ -96,8 +96,8 @@ export function useCart() {
       // The backend rejects quantity <= 0 on the update endpoint by design - removing is a
       // distinct operation there, not "update to zero".
       return quantity > 0
-        ? cartApi.updateItemQuantity(cartId, productId, quantity)
-        : cartApi.removeItem(cartId, productId);
+        ? cartApi.updateItemQuantity(cartId, productId, quantity, accessToken ?? undefined)
+        : cartApi.removeItem(cartId, productId, accessToken ?? undefined);
     },
     onSuccess: invalidate,
   });
@@ -105,7 +105,7 @@ export function useCart() {
   const removeItem = useMutation({
     mutationFn: async (productId: string) => {
       const cartId = await resolveCartId();
-      return cartApi.removeItem(cartId, productId);
+      return cartApi.removeItem(cartId, productId, accessToken ?? undefined);
     },
     onSuccess: invalidate,
   });
