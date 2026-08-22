@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 
 namespace ShippingService.Infrastructure;
 
@@ -25,6 +26,13 @@ public static class DependencyInjection
 
         services.AddScoped<IShipmentRepository, ShipmentRepository>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+
+        // Same reasoning as PaymentService's "Stripe" named client - EasyPostShippingCarrierGateway
+        // pulls this from IHttpClientFactory so its calls run through Polly's standard
+        // retry/circuit-breaker/timeout pipeline. Lower stakes than the Stripe charge path (tracker
+        // create/retrieve isn't a "charge money" operation), so no extra idempotency-key handling
+        // needed here.
+        services.AddHttpClient("EasyPost").AddStandardResilienceHandler();
         services.AddScoped<IShippingCarrierGateway, EasyPostShippingCarrierGateway>();
         services.AddHostedService<OrderPaidConsumer>();
 

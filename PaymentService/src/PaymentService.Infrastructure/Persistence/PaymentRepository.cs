@@ -1,6 +1,8 @@
+using PaymentService.Application.Common;
 using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace PaymentService.Infrastructure.Persistence;
 
@@ -39,8 +41,26 @@ public class PaymentRepository : IPaymentRepository
         await _dbContext.Payments.AddAsync(payment, cancellationToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsSucceededPaymentUniqueViolation(ex))
+        {
+            // The concurrently-inserted Payment row is still tracked as Added here (SaveChanges
+            // failed, it was never detached) - that's how OrderId is recovered without needing it
+            // threaded through this call's signature.
+            var orderId = _dbContext.ChangeTracker.Entries<Payment>()
+                .First(e => e.State == EntityState.Added)
+                .Entity.OrderId;
+
+            throw new DuplicateSucceededPaymentException(orderId, ex);
+        }
     }
+
+    private static bool IsSucceededPaymentUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pgEx
+        && pgEx.ConstraintName == "IX_Payments_OrderId_Unique_Succeeded";
 }

@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 
 namespace OrderService.Infrastructure;
@@ -39,23 +40,34 @@ public static class DependencyInjection
         // lazy-binding reasoning as every other config-dependent client in this project.
         // ForwardAuthorizationHandler copies the caller's own JWT onto these outgoing calls —
         // InventoryService's reserve/release/commit endpoints require [Authorize].
+        // AddStandardResilienceHandler wraps every call below in Polly's standard pipeline: retry
+        // (with jittered exponential backoff), a circuit breaker, and both per-attempt and
+        // total-request timeouts - triggered on 5xx/408/network errors/timeouts, matching what
+        // this repo previously had none of (see the note on ChargeAsync's idempotency key below
+        // for why blindly retrying a mutating call needed a companion fix, not just this handler).
         services.AddHttpClient<ICartServiceClient, CartServiceClient>((sp, client) =>
         {
             var cartOptions = sp.GetRequiredService<IOptions<CartServiceOptions>>().Value;
             client.BaseAddress = new Uri(cartOptions.BaseUrl);
-        }).AddHttpMessageHandler<ForwardAuthorizationHandler>();
+        }).AddHttpMessageHandler<ForwardAuthorizationHandler>()
+          .AddStandardResilienceHandler();
 
         services.AddHttpClient<IInventoryServiceClient, InventoryServiceClient>((sp, client) =>
         {
             var inventoryOptions = sp.GetRequiredService<IOptions<InventoryServiceOptions>>().Value;
             client.BaseAddress = new Uri(inventoryOptions.BaseUrl);
-        }).AddHttpMessageHandler<ForwardAuthorizationHandler>();
+        }).AddHttpMessageHandler<ForwardAuthorizationHandler>()
+          .AddStandardResilienceHandler();
 
+        // Retrying this one specifically is why PaymentService's IPaymentGateway.ChargeAsync
+        // gained an idempotency-key parameter (see StripePaymentGateway) - a dropped response
+        // after Stripe already processed the charge must not turn into a second charge on retry.
         services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>((sp, client) =>
         {
             var paymentOptions = sp.GetRequiredService<IOptions<PaymentServiceOptions>>().Value;
             client.BaseAddress = new Uri(paymentOptions.BaseUrl);
-        }).AddHttpMessageHandler<ForwardAuthorizationHandler>();
+        }).AddHttpMessageHandler<ForwardAuthorizationHandler>()
+          .AddStandardResilienceHandler();
 
         services.AddValidatorsFromAssembly(typeof(Application.Commands.CheckoutCommand).Assembly);
 

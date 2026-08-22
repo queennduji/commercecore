@@ -14,7 +14,7 @@ public class FakePaymentGateway : IPaymentGateway
     public List<(decimal Amount, string Currency, string PaymentMethodId)> Charges { get; } = [];
     public List<string> Refunds { get; } = [];
 
-    public Task<GatewayChargeResult> ChargeAsync(decimal amount, string currency, string paymentMethodId, string description, CancellationToken cancellationToken = default)
+    public Task<GatewayChargeResult> ChargeAsync(decimal amount, string currency, string paymentMethodId, string description, string idempotencyKey, CancellationToken cancellationToken = default)
     {
         Charges.Add((amount, currency, paymentMethodId));
 

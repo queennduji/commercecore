@@ -16,9 +16,15 @@ public class EasyPostShippingCarrierGateway : IShippingCarrierGateway
 {
     private readonly Client _client;
 
-    public EasyPostShippingCarrierGateway(IOptions<EasyPostOptions> options)
+    public EasyPostShippingCarrierGateway(IOptions<EasyPostOptions> options, IHttpClientFactory httpClientFactory)
     {
-        _client = new Client(new ClientConfiguration(options.Value.ApiKey));
+        // The "EasyPost" named client (see DependencyInjection) carries Polly's standard
+        // resilience handler - passing it via CustomHttpClient is what puts these calls through
+        // that pipeline instead of whatever default HttpClient the SDK would otherwise create.
+        _client = new Client(new ClientConfiguration(options.Value.ApiKey)
+        {
+            CustomHttpClient = httpClientFactory.CreateClient("EasyPost")
+        });
     }
 
     public async Task<CarrierTrackerResult> CreateTrackerAsync(string trackingCode, string carrier, CancellationToken cancellationToken = default)
