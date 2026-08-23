@@ -46,8 +46,11 @@ they show a static "Preparing your order for shipment" message instead of live t
    curl -I http://localhost:9000/minio/health/live   # -> HTTP/1.1 200 OK
    ```
 
-5. **Add the two nginx server blocks** (adjust paths if this VM's nginx layout differs from
-   Debian/Ubuntu's default `sites-available`/`sites-enabled`):
+5. **Add the two nginx server blocks.** This VM doesn't run a standalone host-installed
+   nginx — see "Sharing nginx with another project on the same VM" below instead, which is
+   what's actually in use. For a genuinely standalone box with nginx installed directly on
+   the host (adjust paths if its layout differs from Debian/Ubuntu's default
+   `sites-available`/`sites-enabled`):
    ```bash
    sudo cp deploy/nginx/api.commercecore.app.conf /etc/nginx/sites-available/
    sudo cp deploy/nginx/media.commercecore.app.conf /etc/nginx/sites-available/
@@ -92,6 +95,34 @@ Once you have a real EasyPost API key:
    `shipping-cluster` route is already configured to find it at `http://shipping-service:8080`
    once that container exists.
 
+## Sharing nginx with another project on the same VM
+
+This is the actual current setup (as of when this was written, this VM also runs atlas-bank),
+not the standalone host-nginx path described in step 5 above. Instead of installing nginx
+directly on the host, the other project's own dockerized nginx picks up CommerceCore's server
+blocks via a bind-mounted `conf.d` directory:
+
+1. The other project's nginx service joins this stack's `commercecore` network as an
+   `external: true` reference (see the Notes section below) - that's what lets it reverse-proxy
+   to `cc-api-gateway`/`minio` by container name.
+2. Its nginx service bind-mounts this repo's `deploy/nginx/conf.d/` directory onto its own
+   `/etc/nginx/conf.d/`, and its main `nginx.conf` has `include /etc/nginx/conf.d/*.conf;`
+   inside the `http {}` block to pick it up. `deploy/nginx/conf.d/` (not the top-level
+   `deploy/nginx/*.conf` files used by step 5) is the version meant for this scenario - it
+   proxies by Docker container name instead of `127.0.0.1:<port>`, since nginx and
+   `cc-api-gateway`/`minio` are all containers here, not host processes.
+3. HTTPS certs for `api.commercecore.app`/`media.commercecore.app` are provisioned and renewed
+   by the OTHER project's certbot container, not one of this project's own services - the two
+   projects share one `certbot-conf` volume. See that project's `nginx/init-letsencrypt.sh`
+   (or equivalent) for the actual issuance command; `certbot renew`'s periodic loop picks up
+   both projects' certs automatically since they all live under the same mounted
+   `/etc/letsencrypt/live/`.
+4. Redeploying CommerceCore's own services (`up -d --build`, as above) does **not** touch
+   nginx at all - nginx is entirely owned and run by the other project's compose stack. If you
+   change anything under `deploy/nginx/conf.d/`, the other project's nginx container needs to
+   be recreated (not just reloaded) to pick up the new bind-mounted files, since Docker bind
+   mounts are set at container-create time.
+
 ## Becoming an admin
 
 Product/category/inventory writes and refunds (CatalogService's Products/Categories/
@@ -122,8 +153,8 @@ entries on `authentication-service` in `docker-compose.prod.yml`, following the 
 - The `commercecore` Docker network here is created **by this compose file** (not `external:
   true` like the per-service dev compose files) since this compose project creates it first - see
   the comment at the top of `docker-compose.prod.yml`. If this VM also runs a separate project
-  behind its own nginx (as it did when this was built - see atlas-bank's own compose/nginx setup),
-  that nginx needs to join this network too (as an `external: true` reference, since this file
+  behind its own nginx, see "Sharing nginx with another project on the same VM" above - that
+  nginx needs to join this network too (as an `external: true` reference, since this file
   creates it) to reach `cc-api-gateway`/`minio` by name for reverse-proxying.
 - The ApiGateway service here is named `cc-api-gateway`, not the more natural `api-gateway` -
   a sibling project on the same box had already claimed that exact name in its own compose file.
