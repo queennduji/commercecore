@@ -31,7 +31,13 @@ public class EasyPostShippingCarrierGateway : IShippingCarrierGateway
     {
         try
         {
-            var tracker = await _client.Tracker.Create(trackingCode, carrier, cancellationToken);
+            // EasyPost.Services.TrackerService.Create's positional overload is (carrier,
+            // trackingCode, ct) - the reverse of this method's own (trackingCode, carrier)
+            // parameter order. Passing them straight through here previously sent our tracking
+            // code as EasyPost's "carrier" and our carrier name as its "tracking code", which
+            // EasyPost's test-mode validation caught (it rejected "USPS" for not being one of
+            // the seven canned test tracking numbers) - confirmed live against the real API.
+            var tracker = await _client.Tracker.Create(carrier, trackingCode, cancellationToken);
             return new CarrierTrackerResult(true, tracker.Id, tracker.Status, null);
         }
         catch (EasyPostError ex)
