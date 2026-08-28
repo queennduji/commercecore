@@ -128,7 +128,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": { "raw": "{{baseUrl}}/api/payments/refund", "host": ["{{baseUrl}}"], "path": ["api", "payments", "refund"] },
             "body": { "mode": "raw", "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}" },
-            "description": "Refunds the most recent Succeeded payment for the order (run 'Charge (succeeds)' first). Ops action — no ownership check, mirrors OrderService's Refund."
+            "description": "Refunds the most recent Succeeded payment for the order (run 'Charge (succeeds)' first). Ops action — no ownership check, mirrors OrderService's Refund. Requires an Admin-role token; the default {{email}} account from the Auth folder won't have one, so this will 403 until you log in as an admin."
           },
           "event": [
             {
