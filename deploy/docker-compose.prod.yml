@@ -15,7 +15,8 @@
 #   - Jaeger / Elasticsearch / Kibana / otel-collector (observability stack) -> not run at all.
 #     Otel__TracesEndpoint/LogsEndpoint below are left pointed at addresses nothing is listening
 #     on - NEVER unset them, every service throws UriFormatException at startup on an empty value.
-#   - NotificationService, ShippingService -> not deployed yet (see deploy/README.md)
+#   - NotificationService -> not deployed yet (see deploy/README.md); ShippingService is deployed
+#     below now that a real EasyPost key exists
 #
 # Secrets referenced below (${VAR}) come from deploy/.env.prod (gitignored, lives only on the
 # VM) - see deploy/.env.prod.example for the full list.
@@ -329,6 +330,47 @@ services:
       Otel__LogsEndpoint: "http://otel-collector:4317"
     restart: unless-stopped
 
+  # --- ShippingService ---
+
+  shipping-postgres:
+    image: postgres:16
+    networks:
+      - commercecore
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${SHIPPING_DB_PASSWORD}"
+      POSTGRES_DB: shipping_service
+    volumes:
+      - shipping-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  shipping-service:
+    build:
+      context: ../ShippingService
+      dockerfile: Dockerfile
+    networks:
+      - commercecore
+    depends_on:
+      shipping-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ShippingDatabase: "Host=shipping-postgres;Port=5432;Database=shipping_service;Username=postgres;Password=${SHIPPING_DB_PASSWORD}"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__SchemaRegistryUrl: "http://redpanda:8081"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CommerceCore.AuthenticationService"
+      Jwt__Audience: "CommerceCore"
+      EasyPost__ApiKey: "${EASYPOST_API_KEY:?Set EASYPOST_API_KEY in deploy/.env.prod}"
+      Otel__TracesEndpoint: "http://jaeger:4317"
+      Otel__LogsEndpoint: "http://otel-collector:4317"
+    restart: unless-stopped
+
   # --- ApiGateway (the only backend service exposed to the internet, via nginx) ---
   # Named cc-api-gateway, not api-gateway: this box also runs a different project (atlas-bank)
   # whose own compose file has a same-named "api-gateway" service. Its nginx has to join this
@@ -376,3 +418,4 @@ volumes:
   auth-postgres-data:
   order-postgres-data:
   payment-postgres-data:
+  shipping-postgres-data:

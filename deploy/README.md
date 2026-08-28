@@ -7,9 +7,9 @@ how-to.
 
 **Not deployed yet**: NotificationService (needs your own Resend/Twilio credentials - it's an
 async Kafka consumer, nothing in the Storefront UI calls it, so skipping it doesn't break
-anything) and ShippingService (needs an EasyPost API key - once you have one, see "Adding
-ShippingService later" below). Order detail pages already handle ShippingService being absent -
-they show a static "Preparing your order for shipment" message instead of live tracking.
+anything). ShippingService is deployed (see "ShippingService" below) - order detail pages still
+handle it being briefly unreachable during a redeploy the same way they always did: a static
+"Preparing your order for shipment" message instead of live tracking.
 
 ## One-time setup on the VM
 
@@ -83,17 +83,15 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up 
 Only changed services rebuild; the rest keep running unaffected. Volumes (Postgres data, MinIO
 objects, Redpanda topics) persist across this.
 
-## Adding ShippingService later
+## ShippingService
 
-Once you have a real EasyPost API key:
-1. Add a `shipping-postgres` + `shipping-service` block to `deploy/docker-compose.prod.yml`,
-   copying the pattern from `order-postgres`/`order-service` above (own DB password, same
-   `Jwt__Key`/Kafka/Otel treatment) plus `EasyPost__ApiKey: "${EASYPOST_API_KEY}"` - see
-   `ShippingService/docker-compose.yml` for its exact env var names.
-2. Add `EASYPOST_API_KEY=` to `deploy/.env.prod` (and `.env.prod.example`).
-3. Redeploy with the same `up -d --build` command above - `cc-api-gateway`'s
-   `shipping-cluster` route is already configured to find it at `http://shipping-service:8080`
-   once that container exists.
+Runs the same as every other service (own `shipping-postgres`, `SHIPPING_DB_PASSWORD` in
+`deploy/.env.prod`), plus `EASYPOST_API_KEY` - a real EasyPost test-mode key, reusing the one
+already in `ShippingService/.env` unless you'd rather keep this deployment on its own. It only
+ever creates shipments reactively (consuming `order.paid.v1` off Redpanda), so there's no
+synchronous `*Service__BaseUrl` wiring for it anywhere - `cc-api-gateway`'s `shipping-cluster`
+route (`http://shipping-service:8080`) exists purely for the Storefront's own read-only tracking
+lookups on the order detail page.
 
 ## Sharing nginx with another project on the same VM
 
