@@ -12,8 +12,9 @@ Cart/Inventory.
   mode — real network calls, real (test) card behavior, but zero real money ever moves
 - PostgreSQL via EF Core — payments are durable financial records, same as Orders
 - Confluent Kafka + Schema Registry (Avro): publishes `payment.succeeded.v1`, `payment.failed.v1`,
-  `payment.refunded.v1` — no consumer yet (nothing exists to react to until a Notification service
-  does)
+  `payment.refunded.v1` — `payment.failed.v1` is consumed by NotificationService (a declined card
+  leaves the order `Pending` with no OrderService event of its own to hang a "payment failed,
+  please retry" notification off); the other two currently have no consumer
 - CQRS via MediatR, FluentValidation for request validation
 
 Command/query handlers live in the **Application** layer, same as every other service. The
@@ -57,6 +58,23 @@ the officially documented way to exercise PaymentIntents server-to-server
 the Stripe dashboard), `FailureReason`. A row is recorded for **every** charge attempt, succeeded
 or declined, so there's always an audit trail — not just of successful payments.
 
+### Guarding against a duplicate charge
+
+A retried checkout request (network blip, a double-click, OrderService's own resilience handler
+retrying a slow call) shouldn't ever charge a customer twice for the same order. Three
+independent layers, not one:
+
+1. **Stripe idempotency key**, keyed by `OrderId` — Stripe itself dedupes an identical retried
+   charge request before it becomes a second real charge.
+2. **A Postgres advisory lock**, held for the duration of `ChargeCommandHandler.Handle` — serializes
+   concurrent charge attempts for the same order rather than letting them race.
+3. **A partial unique index** on `OrderId` (`WHERE "Status" = 'Succeeded'`) — the last-resort
+   database-level backstop if the first two somehow both failed to prevent it; a second attempt
+   that races past the lock hits this constraint and converges to the same success response instead
+   of a raw SQL error.
+
+Refunds use the same idempotency-key approach, keyed by the original charge's `ProviderReference`.
+
 ## Local development
 
 ```bash
@@ -84,10 +102,11 @@ integration tests.
 ### Endpoints
 
 All endpoints require a valid JWT bearer token (obtained from AuthenticationService's
-`/api/auth/login`) — there's no anonymous payment data.
+`/api/auth/login`) — there's no anonymous payment data. `refund` additionally requires the
+**`Admin`** role — see [AuthenticationService/README.md](../AuthenticationService/README.md#roles).
 
 - `POST /api/payments/charge` — charge a card (body: `orderId`, `amount`, `currency`, `paymentMethodId`); records a Payment either way, fails the request if the charge was declined
-- `POST /api/payments/refund` — refund the most recent Succeeded payment for an order (body: `orderId`); fails if there's no successful payment on record
+- `POST /api/payments/refund` — refund the most recent Succeeded payment for an order (body: `orderId`); fails if there's no successful payment on record (Admin)
 - `GET /api/payments/{id}` — get a payment (ownership-checked)
 - `GET /api/payments/order/{orderId}` — list payments for an order (filtered to ones the caller owns)
 

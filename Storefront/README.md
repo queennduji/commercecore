@@ -3,18 +3,18 @@
 Customer-facing storefront for CommerceCore - Next.js (App Router) + TypeScript, talking to the
 [ApiGateway](../ApiGateway/README.md) as its only backend dependency.
 
-**Phase 1**: anonymous, read-only product browsing - home page, product listing with category filtering
-and pagination, product detail with images and live stock.
-
-**Phase 2**: registration/login and a shopping cart that works for both guests and signed-in users, with a
-guest cart merging into the user's cart on login.
-
-**Phase 3**: checkout - shipping address, order creation, and a real Stripe test-mode card payment via
-Stripe Elements, ending on an order confirmation page (`/orders/[id]`).
-
-**Phase 4**: order history (`/orders`) and shipment tracking on the order detail page - this closes out
-the planned phases. **Docker packaging** (current scope): its own `Dockerfile` + `docker-compose.yml`,
-matching every other service in this repo - see "Run with Docker" below.
+Covers the full customer journey: anonymous, read-only product browsing (home page, category
+filtering and pagination, product detail with images and live stock); registration/login with a
+cart that works for both guests and signed-in users (a guest cart merges into the user's cart on
+login); checkout with a real Stripe test-mode card payment via Stripe Elements; and order history
+(`/orders`) with shipment tracking and the ability to resume payment or cancel a still-`Pending`
+order from its own detail page (`/orders/[id]`), not just at the moment of checkout. Packaged the
+same as every other service in this repo - its own `Dockerfile` + `docker-compose.yml`, see "Run
+with Docker" below - and deployed live at [commercecore.app](https://commercecore.app) (Vercel; see
+the root [deploy/README.md](../deploy/README.md) for how the backend it talks to is deployed).
+This built up in stages worth knowing about if you're reading old commits or PRs rather than
+treating as a forward-looking plan: anonymous browsing, then auth/cart, then checkout, then order
+history/tracking - see git history for that story, not this README.
 
 ## Stack
 

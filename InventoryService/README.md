@@ -42,16 +42,23 @@ dotnet test commercecore.slnx
 
 ### Endpoints
 
-All `GET` endpoints are public. `POST`/`PUT`/`DELETE` require a valid JWT bearer token (obtained from AuthenticationService's `/api/auth/login`).
+All `GET` endpoints are public. Writes split into two tiers, not one:
+
+- **Location CRUD and `/adjust`** (manual stock correction/restocking) require a JWT carrying the
+  **`Admin`** role — see [AuthenticationService/README.md](../AuthenticationService/README.md#roles).
+  These are back-office actions.
+- **Reserve/release/commit** only require *any* valid JWT, no `Admin` role — they're called by
+  OrderService as part of the checkout saga on a customer's behalf, not by staff, so gating them to
+  admins would break checkout entirely.
 
 - `GET /api/locations` / `GET /api/locations/{id}` — list / get a location
-- `POST /api/locations` — create a location
-- `PUT /api/locations/{id}` — update a location (name, code, active flag)
-- `DELETE /api/locations/{id}` — deactivate a location (blocked with 400 if it still holds stock)
+- `POST /api/locations` — create a location (Admin)
+- `PUT /api/locations/{id}` — update a location (name, code, active flag) (Admin)
+- `DELETE /api/locations/{id}` — deactivate a location (blocked with 400 if it still holds stock) (Admin)
 - `GET /api/inventory` — list inventory records, filterable by `productId`/`locationId`, paginated (`page`/`pageSize`)
 - `GET /api/inventory/{productId}` — stock for one product across every location
 - `GET /api/inventory/{productId}/{locationId}` — stock for one product at one location
-- `POST /api/inventory/adjust` — adjust on-hand stock (`delta` positive for restock, negative for correction/damage); upserts the inventory record if one doesn't exist yet, fails if the adjustment would go negative
+- `POST /api/inventory/adjust` — adjust on-hand stock (`delta` positive for restock, negative for correction/damage); upserts the inventory record if one doesn't exist yet, fails if the adjustment would go negative (Admin)
 - `POST /api/inventory/reservations` — reserve stock at a location (fails if `Available < quantity`), returns the reservation
 - `GET /api/inventory/reservations/{id}` — get a reservation
 - `POST /api/inventory/reservations/{id}/release` — release an active reservation (stock becomes available again)

@@ -57,9 +57,12 @@ dotnet test commercecore.slnx
 
 ### Endpoints
 
-`GET`/`POST`/`PUT`/`DELETE` on `/api/carts/{id}...` are all public (guest carts have no identity to
-check). `/api/carts/me` and `/api/carts/me/merge` require a valid JWT bearer token (obtained from
-AuthenticationService's `/api/auth/login`).
+`GET`/`POST`/`PUT`/`DELETE` on `/api/carts/{id}...` are `[AllowAnonymous]` — a genuinely
+unauthenticated guest-cart request (no token at all) still works, since a guest cart's Id is its
+only credential. But if a Bearer token *is* presented, these endpoints also check it: a request
+against another signed-in user's persistent cart (Id == that user's own Id) is rejected as "not
+found" even with a valid, unrelated token. `/api/carts/me` and `/api/carts/me/merge` require a
+valid JWT bearer token outright (obtained from AuthenticationService's `/api/auth/login`).
 
 - `POST /api/carts` — create a new guest cart
 - `GET /api/carts/{id}` — get a cart

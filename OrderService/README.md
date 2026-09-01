@@ -59,16 +59,19 @@ Cancelled        Refunded (also reachable from Shipped/Delivered)
   Stripe test-mode refund) and deliberately does **not** touch inventory — restocking a
   post-shipment return needs its own workflow, out of scope for now.
 
-### Ownership model (known simplification)
+### Ownership model
 
-AuthenticationService has no role system yet, so this service can't gate actions to "fulfillment
-staff" vs. "customer." Instead:
+AuthenticationService's `Admin` role (see [its README](../AuthenticationService/README.md#roles))
+is what gates actions to "fulfillment staff" vs. "customer" here — this used to be a known gap
+("no role system exists yet, so Refund is just any authenticated caller") before that role existed;
+it isn't anymore:
 
 - **Checkout, Pay, Cancel, Get, list-my-orders** — ownership-checked against the caller's JWT
-  subject. `Get`/list return "not found" rather than "forbidden" on a mismatch, so the endpoint
-  doesn't leak whether an order id exists to someone who doesn't own it.
-- **Refund** — any authenticated caller, no ownership check. Stands in for an action a back-office
-  system would trigger, not the customer.
+  subject, available to any authenticated customer acting on their own order. `Get`/list return
+  "not found" rather than "forbidden" on a mismatch, so the endpoint doesn't leak whether an order
+  id exists to someone who doesn't own it.
+- **Refund** — requires the `Admin` role, no ownership check (an admin can refund any customer's
+  order). Stands in for an action a back-office system would trigger, not the customer.
 - **Ship, Deliver** — no longer HTTP endpoints at all; see Order lifecycle above.
 
 ## Local development
@@ -105,7 +108,7 @@ All endpoints require a valid JWT bearer token (obtained from AuthenticationServ
 - `GET /api/orders/me` — the caller's own order history, paginated (`page`/`pageSize`)
 - `POST /api/orders/{id}/pay` — `Pending` → `Paid` (ownership-checked; body: `paymentMethodId`; calls PaymentService)
 - `POST /api/orders/{id}/cancel` — `Pending`/`Paid` → `Cancelled`, releases reservations (ownership-checked)
-- `POST /api/orders/{id}/refund` — `Paid`/`Shipped`/`Delivered` → `Refunded` (ops action; calls PaymentService)
+- `POST /api/orders/{id}/refund` — `Paid`/`Shipped`/`Delivered` → `Refunded` (`Admin` role required; calls PaymentService)
 
 `Paid` → `Shipped` → `Delivered` happen automatically via Kafka — see ShippingService's README.
 

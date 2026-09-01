@@ -34,7 +34,7 @@ handle it being briefly unreachable during a redeploy the same way they always d
    ```bash
    docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
    ```
-   First build takes a while (9 .NET images + Redpanda + Postgres pulls). Watch it come up:
+   First build takes a while (every backend .NET service, plus Redpanda + Postgres pulls). Watch it come up:
    ```bash
    docker compose -f deploy/docker-compose.prod.yml ps
    docker compose -f deploy/docker-compose.prod.yml logs -f cc-api-gateway

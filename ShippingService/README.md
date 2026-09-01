@@ -111,12 +111,15 @@ dotnet test commercecore.slnx
 ### Endpoints
 
 All endpoints require a valid JWT bearer token (obtained from AuthenticationService's
-`/api/auth/login`).
+`/api/auth/login`). `dispatch` and `refresh-tracking` additionally require the **`Admin`** role —
+see [AuthenticationService/README.md](../AuthenticationService/README.md#roles) — they're ops
+actions gated to fulfillment/admin staff via role, not an ownership check, unlike `Get`/`GetByOrder`
+below.
 
 - `GET /api/shipments/{id}` — get a shipment (ownership-checked)
 - `GET /api/shipments/order/{orderId}` — get the shipment for an order (ownership-checked)
-- `POST /api/shipments/{id}/dispatch` — ops action (body: `carrier`, `trackingCode`); creates the EasyPost tracker and publishes `shipment.dispatched.v1`
-- `POST /api/shipments/{id}/refresh-tracking` — ops action; re-polls EasyPost and publishes `shipment.delivered.v1`/`shipment.exception.v1` on a genuine status transition
+- `POST /api/shipments/{id}/dispatch` — ops action, Admin (body: `carrier`, `trackingCode`); creates the EasyPost tracker and publishes `shipment.dispatched.v1`
+- `POST /api/shipments/{id}/refresh-tracking` — ops action, Admin; re-polls EasyPost and publishes `shipment.delivered.v1`/`shipment.exception.v1` on a genuine status transition
 
 There's no `POST /api/shipments` — shipments are only ever created by the `order.paid.v1` consumer,
 never directly via HTTP.

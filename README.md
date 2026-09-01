@@ -1,6 +1,135 @@
 # CommerceCore
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Ecommerce microservices platform. Each service lives in its own top-level folder in this repo (one repo, one service per subfolder), built one service at a time.
+
+**Live demo:** [commercecore.app](https://commercecore.app) — Storefront on Vercel, backend on a
+single Oracle Cloud VM (see [deploy/README.md](deploy/README.md)). NotificationService is the only
+service not deployed there (it needs your own Resend/Twilio credentials and nothing in the
+Storefront calls it directly, so its absence doesn't break anything).
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["Client"]
+        SF["Storefront (Next.js)\nVercel"]
+    end
+
+    GW["ApiGateway\nYARP reverse proxy - JWT check on fully-authorized routes - rate limiting"]
+
+    SF -->|"HTTPS /api/*"| GW
+
+    subgraph Services["Backend services (.NET 10, one Postgres DB each unless noted)"]
+        AUTH["AuthenticationService\nIdentity, JWT issuance, roles"]
+        CAT["CatalogService\nProducts, categories, images (MinIO)"]
+        INV["InventoryService\nStock, reservations, locations"]
+        CART["CartService\n(Redis-backed, no own DB)"]
+        ORD["OrderService\ncheckout saga orchestrator"]
+        PAY["PaymentService\nStripe test-mode"]
+        SHIP["ShippingService\nEasyPost test-mode"]
+        NOTIF["NotificationService\nResend + Twilio, terminal consumer"]
+    end
+
+    GW --> AUTH
+    GW --> CAT
+    GW --> INV
+    GW --> CART
+    GW --> ORD
+    GW --> PAY
+    GW --> SHIP
+    GW --> NOTIF
+
+    CART -->|"sync: validate/snapshot product"| CAT
+    ORD -->|"sync: fetch/clear cart"| CART
+    ORD -->|"sync: reserve/release/commit stock"| INV
+    ORD -->|"sync: charge/refund"| PAY
+
+    KAFKA[["Kafka / Redpanda + Schema Registry\n(shared event bus, Avro)"]]
+
+    AUTH -.->|publishes| KAFKA
+    CAT -.->|publishes| KAFKA
+    INV -.->|"consumes + publishes"| KAFKA
+    ORD -.->|"consumes + publishes"| KAFKA
+    PAY -.->|publishes| KAFKA
+    SHIP -.->|"consumes + publishes"| KAFKA
+    KAFKA -.->|"consumes (8 topics, publishes none)"| NOTIF
+
+    subgraph Infra["Shared infra"]
+        MINIO[("MinIO\nproduct images")]
+        REDIS[("Redis\nCartService store + CatalogService cache")]
+        PG[("PostgreSQL\none DB per service, except Cart")]
+    end
+
+    subgraph Obs["Observability"]
+        JAEGER["Jaeger\ntraces"]
+        OTEL["otel-collector"]
+        ES[("Elasticsearch")]
+        KIB["Kibana\nlogs"]
+    end
+
+    Services -.-> JAEGER
+    Services -.-> OTEL
+    OTEL --> ES --> KIB
+```
+
+Solid arrows are synchronous HTTP calls; dashed arrows and the Kafka node are asynchronous. The
+gateway is the only backend service reachable from outside the Docker network — see
+[Services](#services) below for what each box actually does, and
+[Observability](#observability) for the traces/logs side in more detail.
+
+### Checkout → payment → fulfillment → notification
+
+The order lifecycle is the one flow that touches nearly every service, mixing synchronous calls
+(checkout, pay) with asynchronous Kafka hops (everything from "paid" onward) — see
+[OrderService/README.md](OrderService/README.md#order-lifecycle) for the full state machine this
+implements:
+
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant SF as Storefront
+    participant ORD as OrderService
+    participant CART as CartService
+    participant INV as InventoryService
+    participant PAY as PaymentService
+    participant K as Kafka
+    participant SHIP as ShippingService
+    participant NOTIF as NotificationService
+
+    Customer->>SF: Checkout
+    SF->>ORD: POST /orders/checkout
+    ORD->>CART: GET caller's cart
+    CART-->>ORD: items
+    ORD->>INV: reserve stock per line
+    INV-->>ORD: reservations
+    ORD->>CART: clear cart
+    ORD->>K: order.created.v1
+    K-->>NOTIF: order.created.v1
+    ORD-->>SF: 201 Order (Pending)
+
+    Customer->>SF: Pay
+    SF->>ORD: POST /orders/{id}/pay
+    ORD->>PAY: charge (idempotency key = OrderId)
+    PAY-->>ORD: succeeded
+    ORD->>K: order.paid.v1
+    K-->>NOTIF: order.paid.v1
+    K-->>SHIP: order.paid.v1
+    SHIP->>SHIP: create Shipment (AwaitingFulfillment)
+    ORD-->>SF: 200 Order (Paid)
+
+    Note over SHIP: Admin dispatches via EasyPost
+    SHIP->>K: shipment.dispatched.v1
+    K-->>ORD: shipment.dispatched.v1
+    ORD->>ORD: commit reservations, Status = Shipped
+    K-->>NOTIF: order.shipped.v1
+
+    SHIP->>K: shipment.delivered.v1
+    K-->>ORD: shipment.delivered.v1
+    ORD->>ORD: Status = Delivered
+    K-->>NOTIF: order.delivered.v1
+```
 
 ## Stack
 

@@ -9,6 +9,25 @@ Identity/Auth microservice for the CommerceCore ecommerce platform. Issues JWT a
 - Confluent Kafka + Schema Registry (Avro) for `auth.user-registered.v1` and `auth.user-logged-in.v1` events
 - Quartz.NET for scheduled refresh-token cleanup
 
+## Roles
+
+`ASP.NET Core Identity`'s role support backs a single `Admin` role, used by every other service to
+gate write/ops endpoints (product and category CRUD, inventory adjustments and location CRUD,
+refunds, shipment dispatch). This service is the only place a caller ends up with that role:
+
+- **`Admin:Emails`** (config, e.g. `Admin:Emails:0` or the `ADMIN_EMAIL` env var in production) is
+  the list of emails that should get the role.
+- **`AdminRoleSeeder`** (`IHostedService`) runs once at startup and assigns `Admin` to any of those
+  emails that are *already* registered — covers the case where you add an email to the list after
+  someone has an account.
+- **`RegisterCommandHandler`** assigns the role immediately at registration if the new email matches
+  the list — covers the case where the admin registers after being added.
+- Access tokens carry the role as a standard `ClaimTypes.Role` claim (`TokenService`), so every
+  other service's default JWT bearer config recognizes `[Authorize(Roles = "Admin")]` with zero
+  extra setup on their end.
+
+There's no admin-management UI or endpoint — see the root [deploy/README.md](../deploy/README.md#becoming-an-admin) for how to grant it in a real deployment.
+
 ## Local development
 
 Kafka + Schema Registry are shared platform infra (one broker for all of CommerceCore, not one per service), so they live in the root [commercecore/docker-compose.yml](../docker-compose.yml) and only need to be started once regardless of which service you're working on:
@@ -35,7 +54,9 @@ dotnet test commercecore.slnx
 
 ### Endpoints
 
-- `POST /api/auth/register` — create a user, returns access + refresh tokens
+- `POST /api/auth/register` — create a user (body: `email`, `password`, optional `phoneNumber` in
+  **E.164** format, e.g. `+15551234567` — used by NotificationService for SMS if present), returns
+  access + refresh tokens
 - `POST /api/auth/login` — authenticate, returns access + refresh tokens
 - `POST /api/auth/refresh` — rotate a refresh token for a new access token
 - `POST /api/auth/revoke` — revoke a refresh token (logout)

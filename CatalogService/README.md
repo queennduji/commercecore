@@ -34,7 +34,10 @@ dotnet test commercecore.slnx
 
 ### Endpoints
 
-All `GET` endpoints are public. `POST`/`PUT`/`DELETE` require a valid JWT bearer token (obtained from AuthenticationService's `/api/auth/login`).
+All `GET` endpoints are public. `POST`/`PUT`/`DELETE` on products, categories, and product images
+require a JWT bearer token carrying the **`Admin`** role, not just any authenticated caller — see
+[AuthenticationService/README.md](../AuthenticationService/README.md#roles) for how that role gets
+assigned.
 
 - `GET /api/categories` / `GET /api/categories/{id}` — list / get a category
 - `POST /api/categories` — create a category
@@ -45,6 +48,11 @@ All `GET` endpoints are public. `POST`/`PUT`/`DELETE` require a valid JWT bearer
 - `POST /api/products` — create a product (starts in `Draft` status)
 - `PUT /api/products/{id}` — update a product (name, description, price, status, category)
 - `DELETE /api/products/{id}` — soft-delete: sets status to `Archived` rather than removing the row
+- `POST /api/products/{productId}/images/upload-url` — get a MinIO presigned PUT URL to upload an
+  image directly from the caller to object storage, bypassing this API for the actual bytes
+- `POST /api/products/{productId}/images` — record an image against a product once its upload (via
+  the presigned URL above) has completed
+- `DELETE /api/products/{productId}/images/{imageId}` — remove a product image
 
 ### Configuration
 
