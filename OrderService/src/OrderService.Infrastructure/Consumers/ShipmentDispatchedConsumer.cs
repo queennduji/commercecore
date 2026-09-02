@@ -14,10 +14,10 @@ using Microsoft.Extensions.Options;
 namespace OrderService.Infrastructure.Consumers;
 
 /// <summary>
-/// Subscribes to ShippingService's shipment.dispatched.v1 topic (owned by ShippingService — this
+/// Subscribes to ShippingService's shipment.dispatched.v1 topic (owned by ShippingService – this
 /// service only consumes it, never publishes to it) and dispatches the existing ShipOrderCommand
 /// to flip Order.Status Paid -> Shipped. This is what replaced the old manual
-/// "POST /api/orders/{id}/ship" ops endpoint — shipping now genuinely drives order state instead
+/// "POST /api/orders/{id}/ship" ops endpoint – shipping now genuinely drives order state instead
 /// of a human calling an endpoint by hand.
 /// </summary>
 public class ShipmentDispatchedConsumer : BackgroundService
@@ -87,7 +87,7 @@ public class ShipmentDispatchedConsumer : BackgroundService
                 if (!commandResult.Succeeded)
                 {
                     // Order not found, or already past Paid (e.g. this message redelivered after a
-                    // consumer restart) — logged, not thrown, since retrying won't help either case.
+                    // consumer restart) – logged, not thrown, since retrying won't help either case.
                     _logger.LogWarning("ShipOrderCommand for order {OrderId} did not succeed: {Errors}", orderId, string.Join("; ", commandResult.Errors));
                 }
             }
@@ -101,9 +101,9 @@ public class ShipmentDispatchedConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                // A single malformed/invalid message must not take the whole consumer — and by
+                // A single malformed/invalid message must not take the whole consumer – and by
                 // extension this host process, since HostOptions.BackgroundServiceExceptionBehavior
-                // defaults to StopHost — down with it. Logged and skipped.
+                // defaults to StopHost – down with it. Logged and skipped.
                 _logger.LogError(ex, "Failed to process a message from {Topic}", _options.ShipmentDispatchedTopic);
             }
         }

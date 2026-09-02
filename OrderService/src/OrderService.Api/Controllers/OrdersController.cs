@@ -64,7 +64,7 @@ public class OrdersController : ControllerBase
     // check). They're now driven by real fulfillment activity in ShippingService instead: this
     // service consumes shipment.dispatched.v1/shipment.delivered.v1 (see
     // OrderService.Infrastructure.Consumers) and dispatches ShipOrderCommand/DeliverOrderCommand
-    // itself — the handlers are unchanged, only the trigger moved from an HTTP endpoint to a Kafka
+    // itself – the handlers are unchanged, only the trigger moved from an HTTP endpoint to a Kafka
     // consumer. Refund remains an ops action: real role-gating now (an interim ownership check
     // lived here briefly, before role infrastructure existed - removed now that it does, since an
     // admin refunding a customer's order was never going to *be* that order's owner).

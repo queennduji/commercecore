@@ -11,7 +11,7 @@ namespace ApiGateway.IntegrationTests.Fixtures;
 /// <summary>A minimal, real (socket-listening) HTTP server standing in for a backend microservice.
 /// YARP makes genuine outbound HttpClient calls to whatever address a cluster's destination
 /// points at, so an in-memory TestServer (no real socket) can't be used as a proxy target the way
-/// it can for e.g. WebApplicationFactory's own client — this binds Kestrel to a real loopback
+/// it can for e.g. WebApplicationFactory's own client – this binds Kestrel to a real loopback
 /// port instead, letting the gateway's own YARP pipeline exercise a real HTTP round trip in
 /// tests, same rigor as the live Docker smoke test but without needing the real backend service
 /// running.</summary>

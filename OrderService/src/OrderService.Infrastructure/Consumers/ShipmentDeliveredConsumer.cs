@@ -16,7 +16,7 @@ namespace OrderService.Infrastructure.Consumers;
 /// <summary>
 /// Subscribes to ShippingService's shipment.delivered.v1 topic and dispatches the existing
 /// DeliverOrderCommand to flip Order.Status Shipped -> Delivered. Replaced the old manual
-/// "POST /api/orders/{id}/deliver" ops endpoint — see ShipmentDispatchedConsumer for the fuller
+/// "POST /api/orders/{id}/deliver" ops endpoint – see ShipmentDispatchedConsumer for the fuller
 /// explanation of why.
 /// </summary>
 public class ShipmentDeliveredConsumer : BackgroundService
@@ -98,9 +98,9 @@ public class ShipmentDeliveredConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                // A single malformed/invalid message must not take the whole consumer — and by
+                // A single malformed/invalid message must not take the whole consumer – and by
                 // extension this host process, since HostOptions.BackgroundServiceExceptionBehavior
-                // defaults to StopHost — down with it. Logged and skipped.
+                // defaults to StopHost – down with it. Logged and skipped.
                 _logger.LogError(ex, "Failed to process a message from {Topic}", _options.ShipmentDeliveredTopic);
             }
         }

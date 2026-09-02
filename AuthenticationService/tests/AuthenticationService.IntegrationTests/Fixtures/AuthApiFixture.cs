@@ -69,7 +69,7 @@ public class AuthApiFixture : IAsyncLifetime
                     ["Jwt:Key"] = Convert.ToBase64String(new byte[32]),
                     ["Jwt:Issuer"] = "CommerceCore.AuthenticationService.IntegrationTests",
                     ["Jwt:Audience"] = "CommerceCore.IntegrationTests",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "AuthenticationService.Tests",

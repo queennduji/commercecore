@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 namespace InventoryService.Infrastructure.Consumers;
 
 /// <summary>
-/// Subscribes to CatalogService's catalog.product-created.v1 topic (owned by CatalogService — this
+/// Subscribes to CatalogService's catalog.product-created.v1 topic (owned by CatalogService – this
 /// service only consumes it, never publishes to it) and provisions a zero-stock InventoryItem for
 /// the new product at every active location, keeping the two services decoupled via events instead
 /// of a direct HTTP call from Catalog into Inventory.
@@ -96,9 +96,9 @@ public class ProductCreatedConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                // A single malformed/invalid message must not take the whole consumer — and by
+                // A single malformed/invalid message must not take the whole consumer – and by
                 // extension this host process, since HostOptions.BackgroundServiceExceptionBehavior
-                // defaults to StopHost — down with it. Logged and skipped.
+                // defaults to StopHost – down with it. Logged and skipped.
                 _logger.LogError(ex, "Failed to process a message from {Topic}", _options.ProductCreatedTopic);
             }
         }

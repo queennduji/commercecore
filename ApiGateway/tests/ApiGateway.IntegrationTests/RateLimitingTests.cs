@@ -4,7 +4,7 @@ using ApiGateway.IntegrationTests.Fixtures;
 namespace ApiGateway.IntegrationTests;
 
 /// <summary>Uses its own isolated fixture (own WebApplicationFactory, own rate-limiter state,
-/// own tiny PermitLimit) rather than sharing <see cref="Fixtures.ApiGatewayFixture"/> — sharing
+/// own tiny PermitLimit) rather than sharing <see cref="Fixtures.ApiGatewayFixture"/> – sharing
 /// state with the routing/auth tests would make this order-dependent on how many requests those
 /// tests happened to send first.</summary>
 [Collection("ApiGatewayRateLimited")]

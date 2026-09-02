@@ -41,9 +41,9 @@ public static class DependencyInjection
         services.AddTransient<ForwardAuthorizationHandler>();
 
         // The configureClient delegate on this overload already runs lazily per HttpClient
-        // creation (via IHttpClientFactory), resolving IOptions<T> at that point — same
+        // creation (via IHttpClientFactory), resolving IOptions<T> at that point – same
         // lazy-binding reasoning as every other config-dependent client in this project.
-        // ForwardAuthorizationHandler copies the caller's own JWT onto these outgoing calls —
+        // ForwardAuthorizationHandler copies the caller's own JWT onto these outgoing calls –
         // InventoryService's reserve/release/commit endpoints require [Authorize].
         // AddStandardResilienceHandler wraps every call below in Polly's standard pipeline: retry
         // (with jittered exponential backoff), a circuit breaker, and both per-attempt and

@@ -1,7 +1,7 @@
 namespace AuthenticationService.Api.Options;
 
 /// <summary>Traces and logs go to two different backends (Jaeger and the logs-only OTel
-/// Collector fanning out to Elasticsearch respectively) — see root docker-compose.yml — so each
+/// Collector fanning out to Elasticsearch respectively) – see root docker-compose.yml – so each
 /// gets its own OTLP endpoint rather than sharing one.</summary>
 public class OtelOptions
 {

@@ -2,7 +2,7 @@ using NotificationService.Domain.Entities;
 
 namespace NotificationService.Application.Templating;
 
-/// <summary>Deliberately plain interpolated HTML, no external templating engine — matches this
+/// <summary>Deliberately plain interpolated HTML, no external templating engine – matches this
 /// platform's general preference for the simplest thing that works (e.g. PaymentService's
 /// description strings) over pulling in a templating library for seven fixed messages.</summary>
 public static class NotificationTemplate
@@ -33,7 +33,7 @@ public static class NotificationTemplate
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
     };
 
-    /// <summary>Short plain-text form for SMS — no subject line, no HTML, terse enough to fit a
+    /// <summary>Short plain-text form for SMS – no subject line, no HTML, terse enough to fit a
     /// single text message.</summary>
     public static string RenderSms(NotificationType type, Guid orderId, string? detail) => type switch
     {

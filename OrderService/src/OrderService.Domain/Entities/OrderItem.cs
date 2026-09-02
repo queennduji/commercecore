@@ -13,7 +13,7 @@ public class OrderItem
     /// <summary>The InventoryService location this line is being fulfilled from.</summary>
     public Guid LocationId { get; set; }
 
-    /// <summary>The InventoryService StockReservation backing this line — committed on Ship,
+    /// <summary>The InventoryService StockReservation backing this line – committed on Ship,
     /// released on Cancel.</summary>
     public Guid ReservationId { get; set; }
 }

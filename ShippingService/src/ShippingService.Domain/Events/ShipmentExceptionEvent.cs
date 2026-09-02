@@ -1,7 +1,7 @@
 namespace ShippingService.Domain.Events;
 
 /// <summary>Not consumed by OrderService in v1 (a failed/returned shipment doesn't have a
-/// corresponding OrderStatus — that stays a fulfillment-side concern for now) — published purely
+/// corresponding OrderStatus – that stays a fulfillment-side concern for now) – published purely
 /// for audit trail and any future ops/notification consumer, mirroring PaymentFailedEvent's role.</summary>
 public class ShipmentExceptionEvent
 {

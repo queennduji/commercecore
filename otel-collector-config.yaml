@@ -1,6 +1,6 @@
 # Logs-only pipeline: every service's OTLP log exporter points at this collector
 # (otel-collector:4317/4318), which forwards to Elasticsearch. Traces bypass this collector
-# entirely and go straight to Jaeger's own native OTLP endpoint — see docker-compose.yml.
+# entirely and go straight to Jaeger's own native OTLP endpoint – see docker-compose.yml.
 receivers:
   otlp:
     protocols:
@@ -18,9 +18,9 @@ exporters:
     logs_index: commercecore-logs
     # Default mapping mode ("otel") targets an OTel-native data stream (needs ILM/index templates
     # a bare local Elasticsearch doesn't have) and computes its own write target, ignoring
-    # logs_index entirely. "ecs" mode respects logs_index and writes to it as a plain index —
+    # logs_index entirely. "ecs" mode respects logs_index and writes to it as a plain index –
     # combined with elasticsearch-index-init in docker-compose.yml pre-creating that index, bulk
-    # writes land cleanly. (This mapping.mode key is deprecated/ignored on collector >=0.153.0 —
+    # writes land cleanly. (This mapping.mode key is deprecated/ignored on collector >=0.153.0 –
     # see the pinned image comment in docker-compose.yml.)
     mapping:
       mode: ecs

@@ -4,8 +4,8 @@ using ApiGateway.IntegrationTests.Fixtures;
 
 namespace ApiGateway.IntegrationTests;
 
-/// <summary>Proves the gateway's own logic — per-route AuthorizationPolicy enforcement and
-/// request forwarding — against a real YARP pipeline. Which physical backend service each path
+/// <summary>Proves the gateway's own logic – per-route AuthorizationPolicy enforcement and
+/// request forwarding – against a real YARP pipeline. Which physical backend service each path
 /// prefix reaches is proven separately by the live Docker smoke test against real, distinct
 /// services; every test here proxies to the same <see cref="FakeBackendServer"/>.</summary>
 [Collection("ApiGateway")]

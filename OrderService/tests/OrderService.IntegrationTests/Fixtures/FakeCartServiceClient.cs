@@ -2,7 +2,7 @@ using OrderService.Application.Interfaces;
 
 namespace OrderService.IntegrationTests.Fixtures;
 
-/// <summary>Stands in for a real CartService — spinning up its own Docker image just to test
+/// <summary>Stands in for a real CartService – spinning up its own Docker image just to test
 /// OrderService's checkout saga would be disproportionate. Tests seed <see cref="Carts"/> directly.</summary>
 public class FakeCartServiceClient : ICartServiceClient
 {

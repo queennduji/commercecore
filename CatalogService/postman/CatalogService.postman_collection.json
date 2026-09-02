@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CatalogService",
-    "description": "CommerceCore CatalogService — categories/products CRUD against the Docker container. Includes an Auth folder that logs into AuthenticationService (also via Docker) to obtain the bearer token CatalogService's write endpoints require.",
+    "description": "CommerceCore CatalogService – categories/products CRUD against the Docker container. Includes an Auth folder that logs into AuthenticationService (also via Docker) to obtain the bearer token CatalogService's write endpoints require.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -299,7 +299,7 @@
             "header": [{ "key": "Content-Type", "value": "image/png" }],
             "url": { "raw": "{{imageUploadUrl}}", "host": ["{{imageUploadUrl}}"] },
             "body": { "mode": "file", "file": {} },
-            "description": "Attach an image file in the Body tab before sending — Postman can't reference your filesystem from a shared collection. This PUT goes straight to MinIO, never through CatalogService, matching the pre-signed upload flow."
+            "description": "Attach an image file in the Body tab before sending – Postman can't reference your filesystem from a shared collection. This PUT goes straight to MinIO, never through CatalogService, matching the pre-signed upload flow."
           },
           "event": [
             {

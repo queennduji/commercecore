@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "ShippingService",
-    "description": "CommerceCore ShippingService — real EasyPost test-mode tracker creation and polling, against the Docker container. Shipments are only ever created by consuming OrderService's order.paid.v1 — there's no direct 'create shipment' endpoint — so the Setup folder runs the full chain (register/login, create product+stock, add to cart, checkout, pay) needed to get a real order.paid.v1 event published, then polls for the auto-created shipment. Requires ShippingService running with your own free EasyPost test API key (see its README), and OrderService/CartService/CatalogService/InventoryService/PaymentService all running for Setup to succeed.",
+    "description": "CommerceCore ShippingService – real EasyPost test-mode tracker creation and polling, against the Docker container. Shipments are only ever created by consuming OrderService's order.paid.v1 – there's no direct 'create shipment' endpoint – so the Setup folder runs the full chain (register/login, create product+stock, add to cart, checkout, pay) needed to get a real order.paid.v1 event published, then polls for the auto-created shipment. Requires ShippingService running with your own free EasyPost test API key (see its README), and OrderService/CartService/CatalogService/InventoryService/PaymentService all running for Setup to succeed.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -219,7 +219,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": { "raw": "{{orderBaseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{orderBaseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] },
             "body": { "mode": "raw", "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}" },
-            "description": "Requires PaymentService running with a real Stripe test key. This is the step that publishes order.paid.v1 — ShippingService's consumer picks it up and auto-creates a Shipment within a second or two. Run 'Get by order' below (retry if 404 — the consumer may not have caught up yet) to fetch it."
+            "description": "Requires PaymentService running with a real Stripe test key. This is the step that publishes order.paid.v1 – ShippingService's consumer picks it up and auto-creates a Shipment within a second or two. Run 'Get by order' below (retry if 404 – the consumer may not have caught up yet) to fetch it."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
@@ -235,7 +235,7 @@
           "request": {
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/api/shipments/order/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "order", "{{orderId}}"] },
-            "description": "Returns 404 until ShippingService's order.paid.v1 consumer has caught up — retry a couple of times a second or two apart after Pay. Status starts as AwaitingFulfillment."
+            "description": "Returns 404 until ShippingService's order.paid.v1 consumer has caught up – retry a couple of times a second or two apart after Pay. Status starts as AwaitingFulfillment."
           },
           "event": [
             {
@@ -254,7 +254,7 @@
           "request": {
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}"] },
-            "description": "Ownership-checked — returns 404 (not 403) if the shipment belongs to a different caller."
+            "description": "Ownership-checked – returns 404 (not 403) if the shipment belongs to a different caller."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
@@ -267,7 +267,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/dispatch", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "dispatch"] },
             "body": { "mode": "raw", "raw": "{\n  \"carrier\": \"USPS\",\n  \"trackingCode\": \"EZ2000000002\"\n}" },
-            "description": "AwaitingFulfillment -> Dispatched. Ops action. Creates a real EasyPost test tracker (EZ2000000002 simulates in_transit) and publishes shipment.dispatched.v1, which flips the order to Shipped — check OrderService's Get order request to see it."
+            "description": "AwaitingFulfillment -> Dispatched. Ops action. Creates a real EasyPost test tracker (EZ2000000002 simulates in_transit) and publishes shipment.dispatched.v1, which flips the order to Shipped – check OrderService's Get order request to see it."
           },
           "event": [
             {
@@ -286,7 +286,7 @@
           "request": {
             "method": "POST",
             "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/refresh-tracking", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "refresh-tracking"] },
-            "description": "Re-polls EasyPost for the tracker's latest status. EZ2000000002 (used above) is a fixed test code that always reports in_transit, so re-running this won't reach Delivered on its own — dispatch a fresh shipment with EZ4000000004 to see the Delivered path end to end, publishing shipment.delivered.v1 which flips the order to Delivered."
+            "description": "Re-polls EasyPost for the tracker's latest status. EZ2000000002 (used above) is a fixed test code that always reports in_transit, so re-running this won't reach Delivered on its own – dispatch a fresh shipment with EZ4000000004 to see the Delivered path end to end, publishing shipment.delivered.v1 which flips the order to Delivered."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
@@ -315,7 +315,7 @@
           "request": {
             "method": "POST",
             "url": { "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/refresh-tracking", "host": ["{{baseUrl}}"], "path": ["api", "shipments", "{{shipmentId}}", "refresh-tracking"] },
-            "description": "Run against a shipment straight from Setup/Pay (still AwaitingFulfillment, before Dispatch) — there's no EasyPost tracker to poll yet."
+            "description": "Run against a shipment straight from Setup/Pay (still AwaitingFulfillment, before Dispatch) – there's no EasyPost tracker to poll yet."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 400', function () { pm.response.to.have.status(400); });"] } }

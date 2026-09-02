@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OrderService",
-    "description": "CommerceCore OrderService — checkout and order lifecycle against the Docker container. Includes an Auth folder that logs into AuthenticationService, and Setup folders that create a real product+stock in CatalogService/InventoryService and add it to the caller's own cart in CartService, so Checkout has something real to work with. There is no Ship/Deliver request here anymore — those transitions are driven by ShippingService consuming this service's own order.paid.v1 event; see ShippingService's own Postman collection to dispatch/deliver a real shipment and watch the order status flip via Kafka.",
+    "description": "CommerceCore OrderService – checkout and order lifecycle against the Docker container. Includes an Auth folder that logs into AuthenticationService, and Setup folders that create a real product+stock in CatalogService/InventoryService and add it to the caller's own cart in CartService, so Checkout has something real to work with. There is no Ship/Deliver request here anymore – those transitions are driven by ShippingService consuming this service's own order.paid.v1 event; see ShippingService's own Postman collection to dispatch/deliver a real shipment and watch the order status flip via Kafka.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -165,7 +165,7 @@
           "request": {
             "method": "GET",
             "url": { "raw": "{{cartBaseUrl}}/api/carts/me", "host": ["{{cartBaseUrl}}"], "path": ["api", "carts", "me"] },
-            "description": "For an authenticated caller, CartService's cart id equals the caller's own user id (there's no literal /me route on the item-mutation endpoints, only on this GET) — this step captures that real id into {{cartId}} for the next request to target."
+            "description": "For an authenticated caller, CartService's cart id equals the caller's own user id (there's no literal /me route on the item-mutation endpoints, only on this GET) – this step captures that real id into {{cartId}} for the next request to target."
           },
           "event": [
             {
@@ -244,7 +244,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"] },
             "body": { "mode": "raw", "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}" },
-            "description": "Pending -> Paid. Ownership-checked. Calls PaymentService for a real (test-mode) Stripe charge — PaymentService must be running with its own Stripe test secret key configured, see PaymentService/README.md. pm_card_visa is Stripe's built-in test PaymentMethod id that always succeeds; swap in pm_card_visa_chargeDeclined to see the decline path (this request will then return 400)."
+            "description": "Pending -> Paid. Ownership-checked. Calls PaymentService for a real (test-mode) Stripe charge – PaymentService must be running with its own Stripe test secret key configured, see PaymentService/README.md. pm_card_visa is Stripe's built-in test PaymentMethod id that always succeeds; swap in pm_card_visa_chargeDeclined to see the decline path (this request will then return 400)."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }
@@ -255,7 +255,7 @@
           "request": {
             "method": "POST",
             "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "cancel"] },
-            "description": "Pending/Paid -> Cancelled, releases reservations. Ownership-checked. Only run this on a fresh order that hasn't been Shipped yet — run 'Checkout' again first if needed."
+            "description": "Pending/Paid -> Cancelled, releases reservations. Ownership-checked. Only run this on a fresh order that hasn't been Shipped yet – run 'Checkout' again first if needed."
           },
           "event": [
             { "listen": "test", "script": { "exec": ["pm.test('Status is 200', function () { pm.response.to.have.status(200); });"] } }

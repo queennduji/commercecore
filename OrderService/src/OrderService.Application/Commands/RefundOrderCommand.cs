@@ -4,7 +4,7 @@ using MediatR;
 
 namespace OrderService.Application.Commands;
 
-/// <summary>Ops action (see ShipOrderCommand). Valid from Paid/Shipped/Delivered — deliberately
+/// <summary>Ops action (see ShipOrderCommand). Valid from Paid/Shipped/Delivered – deliberately
 /// does not touch inventory (restocking a post-shipment return is out of scope for now).
 ///
 /// No UserId/ownership check here on purpose: authorization for this one is enforced at the

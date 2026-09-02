@@ -10,7 +10,7 @@ public class FakeCharge
     public required string PaymentMethodId { get; init; }
 }
 
-/// <summary>Stands in for a real PaymentService — same reasoning as FakeCartServiceClient /
+/// <summary>Stands in for a real PaymentService – same reasoning as FakeCartServiceClient /
 /// FakeInventoryServiceClient. Defaults to succeeding every charge/refund; tests can add an
 /// OrderId to <see cref="DeclinedOrderIds"/> to force a decline and assert the checkout saga
 /// handles it correctly, and inspect <see cref="Charges"/>/<see cref="RefundedOrderIds"/>

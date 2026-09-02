@@ -5,7 +5,7 @@ namespace InventoryService.Infrastructure.Messaging.Schemas;
 
 /// <summary>
 /// Mirrors CatalogService's ProductCreatedAvro exactly (same schema, field-for-field) so this
-/// service's consumer can deserialize catalog.product-created.v1 messages — InventoryService only
+/// service's consumer can deserialize catalog.product-created.v1 messages – InventoryService only
 /// consumes this topic, it does not own it or publish to it.
 /// </summary>
 public class ProductCreatedAvro : ISpecificRecord

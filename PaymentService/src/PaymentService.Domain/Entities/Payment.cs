@@ -9,7 +9,7 @@ public class Payment
     public string Currency { get; set; } = string.Empty;
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
-    /// <summary>Stripe's PaymentIntent id (charge) or Refund id (once refunded) — the id you'd
+    /// <summary>Stripe's PaymentIntent id (charge) or Refund id (once refunded) – the id you'd
     /// look this transaction up by in the Stripe dashboard.</summary>
     public string? ProviderReference { get; set; }
 

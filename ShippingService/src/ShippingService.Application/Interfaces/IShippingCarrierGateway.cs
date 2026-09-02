@@ -7,7 +7,7 @@ public record CarrierTrackerResult(bool Succeeded, string? ProviderTrackerId, st
 /// deterministic fake without needing a real EasyPost account. Mirrors PaymentService's
 /// IPaymentGateway split.
 ///
-/// This service never purchases a real shipping label or address-validates — it only creates and
+/// This service never purchases a real shipping label or address-validates – it only creates and
 /// polls EasyPost Trackers, using EasyPost's own test tracking codes (EZ1000000001 etc, see
 /// EasyPostShippingCarrierGateway) to exercise the real API without needing structured
 /// addresses/parcel dimensions this platform doesn't otherwise model.</summary>

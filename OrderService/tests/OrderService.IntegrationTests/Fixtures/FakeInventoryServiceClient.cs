@@ -10,7 +10,7 @@ public class FakeReservation
     public string Status { get; set; } = "Active";
 }
 
-/// <summary>Stands in for a real InventoryService — same reasoning as FakeCartServiceClient.
+/// <summary>Stands in for a real InventoryService – same reasoning as FakeCartServiceClient.
 /// Tests seed <see cref="StockByProduct"/> directly and can inspect <see cref="Reservations"/>
 /// afterward to assert reserve/release/commit calls actually happened.</summary>
 public class FakeInventoryServiceClient : IInventoryServiceClient

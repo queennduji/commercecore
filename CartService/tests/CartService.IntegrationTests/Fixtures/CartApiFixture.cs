@@ -37,7 +37,7 @@ public class CartApiFixture : IAsyncLifetime
                     ["Jwt:Issuer"] = JwtIssuer,
                     ["Jwt:Audience"] = JwtAudience,
                     ["CatalogService:BaseUrl"] = "http://catalog-service.invalid",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "CartService.Tests",

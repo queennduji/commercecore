@@ -23,7 +23,7 @@ namespace NotificationService.Infrastructure.Persistence.Migrations
                 nullable: true);
 
             // Every Notification row created before this migration was, by definition, an email send
-            // (SMS did not exist yet) — default to "Email" rather than an empty string so existing
+            // (SMS did not exist yet) – default to "Email" rather than an empty string so existing
             // rows still deserialize to a valid NotificationChannel value.
             migrationBuilder.AddColumn<string>(
                 name: "Channel",

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AuthenticationService",
-    "description": "CommerceCore AuthenticationService — register/login/refresh/revoke against the local API.",
+    "description": "CommerceCore AuthenticationService – register/login/refresh/revoke against the local API.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

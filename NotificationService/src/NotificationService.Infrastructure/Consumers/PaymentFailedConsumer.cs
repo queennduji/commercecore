@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace NotificationService.Infrastructure.Consumers;
 
-/// <summary>The one exception to "only consume OrderService + AuthenticationService" — a declined
+/// <summary>The one exception to "only consume OrderService + AuthenticationService" – a declined
 /// payment leaves the order in Pending with no OrderService event to hang a notification off, so
 /// this is the only place NotificationService reaches into PaymentService's own topics.</summary>
 public class PaymentFailedConsumer : KafkaConsumerBackgroundService<PaymentFailedAvro>

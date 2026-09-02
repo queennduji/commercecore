@@ -1,6 +1,6 @@
 namespace NotificationService.Domain.Entities;
 
-/// <summary>A record of one notification attempt on one channel — recorded whether it succeeded
+/// <summary>A record of one notification attempt on one channel – recorded whether it succeeded
 /// or failed, mirroring PaymentService's Payment/ShippingService's Shipment audit-trail pattern.
 /// One lifecycle event that finds both an email and a phone on file produces two rows (one per
 /// channel), not one row describing both outcomes.</summary>
@@ -16,13 +16,13 @@ public class Notification
 
     public NotificationType Type { get; set; }
 
-    /// <summary>Empty for SMS — Resend requires a subject, Twilio messages don't have one.</summary>
+    /// <summary>Empty for SMS – Resend requires a subject, Twilio messages don't have one.</summary>
     public string Subject { get; set; } = string.Empty;
 
     public string Body { get; set; } = string.Empty;
     public NotificationStatus Status { get; set; } = NotificationStatus.Failed;
 
-    /// <summary>Resend's email id or Twilio's message SID — what you'd look this up by in either
+    /// <summary>Resend's email id or Twilio's message SID – what you'd look this up by in either
     /// provider's dashboard.</summary>
     public string? ProviderMessageId { get; set; }
 

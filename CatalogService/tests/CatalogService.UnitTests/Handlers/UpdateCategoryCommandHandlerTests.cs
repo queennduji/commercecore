@@ -58,7 +58,7 @@ public class UpdateCategoryCommandHandlerTests
         var categoryRepository = Substitute.For<ICategoryRepository>();
         var category = new Category { Id = Guid.NewGuid(), Name = "Electronics", Description = "Old", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
         categoryRepository.GetByIdAsync(category.Id, Arg.Any<CancellationToken>()).Returns(category);
-        // GetByNameAndParentAsync legitimately finds the category itself here — the handler must
+        // GetByNameAndParentAsync legitimately finds the category itself here – the handler must
         // not treat that self-match as a conflict.
         categoryRepository.GetByNameAndParentAsync("Electronics", null, Arg.Any<CancellationToken>()).Returns(category);
 

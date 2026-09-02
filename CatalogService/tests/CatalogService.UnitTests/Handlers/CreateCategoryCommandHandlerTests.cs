@@ -58,7 +58,7 @@ public class CreateCategoryCommandHandlerTests
         var parent = new Category { Id = parentId, Name = "Phones", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
         categoryRepository.GetByIdAsync(parentId, Arg.Any<CancellationToken>()).Returns(parent);
         // "Electronics" already exists at the top level, but this request creates it under a
-        // different parent — GetByNameAndParentAsync(name, parentId) correctly returns null since
+        // different parent – GetByNameAndParentAsync(name, parentId) correctly returns null since
         // no sibling under *this* parent shares the name, so the create should succeed.
         categoryRepository.GetByNameAndParentAsync("Electronics", parentId, Arg.Any<CancellationToken>()).Returns((Category?)null);
 

@@ -31,7 +31,7 @@ public static class DependencyInjection
 
         // The configureClient delegate here already runs lazily per HttpClient creation (via
         // IHttpClientFactory), resolving IOptions<CatalogServiceOptions> at that point rather than
-        // at registration time — so no extra lazy-binding ceremony is needed for BaseAddress.
+        // at registration time – so no extra lazy-binding ceremony is needed for BaseAddress.
         services.AddHttpClient<ICatalogServiceClient, CatalogServiceClient>((sp, client) =>
         {
             var catalogOptions = sp.GetRequiredService<IOptions<CatalogServiceOptions>>().Value;

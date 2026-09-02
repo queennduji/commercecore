@@ -4,7 +4,7 @@ using Avro.Specific;
 namespace NotificationService.Infrastructure.Messaging.Schemas;
 
 /// <summary>Mirrors AuthenticationService's UserRegisteredAvro exactly (same schema,
-/// field-for-field) — NotificationService only consumes this topic, never owns or publishes it.</summary>
+/// field-for-field) – NotificationService only consumes this topic, never owns or publishes it.</summary>
 public class UserRegisteredAvro : ISpecificRecord
 {
     public static readonly Schema _SCHEMA = Schema.Parse(

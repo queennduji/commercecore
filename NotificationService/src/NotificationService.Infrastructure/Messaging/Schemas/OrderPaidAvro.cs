@@ -4,7 +4,7 @@ using Avro.Specific;
 namespace NotificationService.Infrastructure.Messaging.Schemas;
 
 /// <summary>Mirrors OrderService's OrderPaidAvro exactly (including the shippingAddress field
-/// added when ShippingService started consuming this topic — unused here, but the schema must
+/// added when ShippingService started consuming this topic – unused here, but the schema must
 /// still match field-for-field).</summary>
 public class OrderPaidAvro : ISpecificRecord
 {

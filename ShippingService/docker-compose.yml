@@ -36,10 +36,10 @@ services:
       Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
       Jwt__Issuer: "CommerceCore.AuthenticationService"
       Jwt__Audience: "CommerceCore"
-      # Unlike the shared Jwt key above, this is a real per-account external credential — it is
+      # Unlike the shared Jwt key above, this is a real per-account external credential – it is
       # NEVER hardcoded here. Set it in a .env file next to this docker-compose.yml (gitignored)
       # or export EASYPOST_API_KEY in your shell before running `docker compose up`. See README.
-      EasyPost__ApiKey: "${EASYPOST_API_KEY:?Set EASYPOST_API_KEY in a .env file or your shell before starting ShippingService — see ShippingService/README.md}"
+      EasyPost__ApiKey: "${EASYPOST_API_KEY:?Set EASYPOST_API_KEY in a .env file or your shell before starting ShippingService – see ShippingService/README.md}"
       Otel__TracesEndpoint: "http://jaeger:4317"
       Otel__LogsEndpoint: "http://otel-collector:4317"
 

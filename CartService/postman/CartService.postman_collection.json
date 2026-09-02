@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CartService",
-    "description": "CommerceCore CartService — guest and authenticated cart flows against the Docker container. Includes an Auth folder that logs into AuthenticationService for the /me and /merge endpoints, and a Setup folder that creates a real product in CatalogService so AddItem has something valid to snapshot.",
+    "description": "CommerceCore CartService – guest and authenticated cart flows against the Docker container. Includes an Auth folder that logs into AuthenticationService for the /me and /merge endpoints, and a Setup folder that creates a real product in CatalogService so AddItem has something valid to snapshot.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {

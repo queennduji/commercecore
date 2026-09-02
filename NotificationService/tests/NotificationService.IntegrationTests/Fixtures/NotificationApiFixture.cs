@@ -84,12 +84,12 @@ public class NotificationApiFixture : IAsyncLifetime
                     ["Jwt:Key"] = JwtKey,
                     ["Jwt:Issuer"] = JwtIssuer,
                     ["Jwt:Audience"] = JwtAudience,
-                    // Never touched — the fake gateways swapped in below stand in for Resend/Twilio.
+                    // Never touched – the fake gateways swapped in below stand in for Resend/Twilio.
                     ["Resend:ApiKey"] = "re_fake_not_used",
                     ["Twilio:AccountSid"] = "AC_fake_not_used",
                     ["Twilio:AuthToken"] = "fake_not_used",
                     ["Twilio:FromPhoneNumber"] = "+15550000000",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "NotificationService.Tests",

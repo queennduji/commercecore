@@ -8,7 +8,7 @@ public interface IPaymentRepository
 
     Task<IReadOnlyList<Payment>> ListByOrderIdAsync(Guid orderId, CancellationToken cancellationToken = default);
 
-    /// <summary>The payment a refund should act against — the most recent Succeeded charge for
+    /// <summary>The payment a refund should act against – the most recent Succeeded charge for
     /// this order.</summary>
     Task<Payment?> GetLatestSucceededByOrderIdAsync(Guid orderId, CancellationToken cancellationToken = default);
 

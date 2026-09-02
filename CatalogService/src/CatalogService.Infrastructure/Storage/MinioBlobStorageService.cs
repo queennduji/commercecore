@@ -18,7 +18,7 @@ public class MinioBlobStorageService : IBlobStorageService, IDisposable
         _options = options.Value;
 
         // Presigned URLs are signed locally (no network round-trip) but must be built against the
-        // endpoint external clients can actually reach — "minio:9000" only resolves inside Docker.
+        // endpoint external clients can actually reach – "minio:9000" only resolves inside Docker.
         _presignClient = new MinioClient()
             .WithEndpoint(_options.PublicBaseUrl)
             .WithCredentials(_options.AccessKey, _options.SecretKey)

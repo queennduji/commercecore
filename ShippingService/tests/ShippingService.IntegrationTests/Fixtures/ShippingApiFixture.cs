@@ -83,9 +83,9 @@ public class ShippingApiFixture : IAsyncLifetime
                     ["Jwt:Key"] = JwtKey,
                     ["Jwt:Issuer"] = JwtIssuer,
                     ["Jwt:Audience"] = JwtAudience,
-                    // Never touched — the fake gateway swapped in below stands in for EasyPost.
+                    // Never touched – the fake gateway swapped in below stands in for EasyPost.
                     ["EasyPost:ApiKey"] = "EZAK_fake_not_used",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "ShippingService.Tests",

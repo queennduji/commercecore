@@ -12,8 +12,8 @@ namespace ShippingService.IntegrationTests;
 /// <summary>
 /// Proves the cross-service, event-driven creation flow end to end: a real Avro message is
 /// published onto order.paid.v1 (the topic OrderService owns) using the same producer/schema shape
-/// OrderService uses, and this service's own OrderPaidConsumer BackgroundService — already running
-/// inside the WebApplicationFactory host — is left to pick it up and create the Shipment on its
+/// OrderService uses, and this service's own OrderPaidConsumer BackgroundService – already running
+/// inside the WebApplicationFactory host – is left to pick it up and create the Shipment on its
 /// own, with no direct call into the application under test. Mirrors InventoryService's
 /// ProductCreatedConsumerTests.
 /// </summary>

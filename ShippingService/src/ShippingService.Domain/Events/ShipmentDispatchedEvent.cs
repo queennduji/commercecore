@@ -1,6 +1,6 @@
 namespace ShippingService.Domain.Events;
 
-/// <summary>Consumed by OrderService to flip Order.Status Paid -> Shipped — this is the event that
+/// <summary>Consumed by OrderService to flip Order.Status Paid -> Shipped – this is the event that
 /// replaced the old manual "POST /api/orders/{id}/ship" ops action.</summary>
 public class ShipmentDispatchedEvent
 {

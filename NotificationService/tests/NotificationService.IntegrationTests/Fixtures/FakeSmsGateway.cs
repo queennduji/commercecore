@@ -2,7 +2,7 @@ using NotificationService.Application.Interfaces;
 
 namespace NotificationService.IntegrationTests.Fixtures;
 
-/// <summary>Stands in for a real Twilio account — same reasoning as <see cref="FakeEmailGateway"/>.
+/// <summary>Stands in for a real Twilio account – same reasoning as <see cref="FakeEmailGateway"/>.
 /// Defaults to succeeding every send; tests can add a recipient to <see cref="DeclinedRecipients"/>
 /// to force a failure.</summary>
 public class FakeSmsGateway : ISmsGateway

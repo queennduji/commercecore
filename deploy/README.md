@@ -47,7 +47,7 @@ handle it being briefly unreachable during a redeploy the same way they always d
    ```
 
 5. **Add the two nginx server blocks.** This VM doesn't run a standalone host-installed
-   nginx — see "Sharing nginx with another project on the same VM" below instead, which is
+   nginx – see "Sharing nginx with another project on the same VM" below instead, which is
    what's actually in use. For a genuinely standalone box with nginx installed directly on
    the host (adjust paths if its layout differs from Debian/Ubuntu's default
    `sites-available`/`sites-enabled`):

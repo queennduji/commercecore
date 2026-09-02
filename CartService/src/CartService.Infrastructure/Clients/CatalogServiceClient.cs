@@ -47,7 +47,7 @@ public class CatalogServiceClient : ICatalogServiceClient
             : new CatalogProductSnapshot(product.Id, product.Sku, product.Name, product.Price, product.Status);
     }
 
-    // Mirrors only the fields this service needs from CatalogService's ProductDto — property names
+    // Mirrors only the fields this service needs from CatalogService's ProductDto – property names
     // match the API's camelCase JSON via [JsonPropertyName] rather than relying on case-insensitive
     // matching, so a rename on either side fails loudly instead of silently deserializing nulls.
     private class ProductResponse

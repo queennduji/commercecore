@@ -18,15 +18,15 @@ refunds, shipment dispatch). This service is the only place a caller ends up wit
 - **`Admin:Emails`** (config, e.g. `Admin:Emails:0` or the `ADMIN_EMAIL` env var in production) is
   the list of emails that should get the role.
 - **`AdminRoleSeeder`** (`IHostedService`) runs once at startup and assigns `Admin` to any of those
-  emails that are *already* registered — covers the case where you add an email to the list after
+  emails that are *already* registered – covers the case where you add an email to the list after
   someone has an account.
 - **`RegisterCommandHandler`** assigns the role immediately at registration if the new email matches
-  the list — covers the case where the admin registers after being added.
+  the list – covers the case where the admin registers after being added.
 - Access tokens carry the role as a standard `ClaimTypes.Role` claim (`TokenService`), so every
   other service's default JWT bearer config recognizes `[Authorize(Roles = "Admin")]` with zero
   extra setup on their end.
 
-There's no admin-management UI or endpoint — see the root [deploy/README.md](../deploy/README.md#becoming-an-admin) for how to grant it in a real deployment.
+There's no admin-management UI or endpoint – see the root [deploy/README.md](../deploy/README.md#becoming-an-admin) for how to grant it in a real deployment.
 
 ## Local development
 
@@ -54,25 +54,25 @@ dotnet test commercecore.slnx
 
 ### Endpoints
 
-- `POST /api/auth/register` — create a user (body: `email`, `password`, optional `phoneNumber` in
-  **E.164** format, e.g. `+15551234567` — used by NotificationService for SMS if present), returns
+- `POST /api/auth/register` – create a user (body: `email`, `password`, optional `phoneNumber` in
+  **E.164** format, e.g. `+15551234567` – used by NotificationService for SMS if present), returns
   access + refresh tokens
-- `POST /api/auth/login` — authenticate, returns access + refresh tokens
-- `POST /api/auth/refresh` — rotate a refresh token for a new access token
-- `POST /api/auth/revoke` — revoke a refresh token (logout)
+- `POST /api/auth/login` – authenticate, returns access + refresh tokens
+- `POST /api/auth/refresh` – rotate a refresh token for a new access token
+- `POST /api/auth/revoke` – revoke a refresh token (logout)
 
 ### Configuration
 
-Local defaults live in `appsettings.Development.json`, including a dev-only JWT signing key. Never reuse that key outside local development — staging/production must supply their own `Jwt:Key`, `ConnectionStrings:AuthDatabase`, and `Kafka:*` values via environment variables or a secrets store.
+Local defaults live in `appsettings.Development.json`, including a dev-only JWT signing key. Never reuse that key outside local development – staging/production must supply their own `Jwt:Key`, `ConnectionStrings:AuthDatabase`, and `Kafka:*` values via environment variables or a secrets store.
 
 ## Running everything in Docker
 
 ```bash
-# from commercecore/ — shared Kafka + Schema Registry, once
+# from commercecore/ – shared Kafka + Schema Registry, once
 docker compose up -d
 
-# from commercecore/AuthenticationService/ — this service's own Postgres + itself
+# from commercecore/AuthenticationService/ – this service's own Postgres + itself
 docker compose up -d --build
 ```
 
-Brings up Postgres (host port 5433), Kafka (host port 9092), Schema Registry (host port 8082), and the API (host port 8085). Host ports are intentionally non-default to avoid clashing with other local services on this machine. The service's containers join the shared `commercecore` Docker network created by the root compose file — start the root stack first.
+Brings up Postgres (host port 5433), Kafka (host port 9092), Schema Registry (host port 8082), and the API (host port 8085). Host ports are intentionally non-default to avoid clashing with other local services on this machine. The service's containers join the shared `commercecore` Docker network created by the root compose file – start the root stack first.

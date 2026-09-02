@@ -39,8 +39,8 @@ public class ShipOrderCommandHandler : IRequestHandler<ShipOrderCommand, Service
         }
 
         // Commits every line's reservation (stock actually leaves the building). There is no
-        // compensating rollback if one commit fails partway through — CommitReservation isn't
-        // reversible in InventoryService — so a partial failure here is surfaced as an error and
+        // compensating rollback if one commit fails partway through – CommitReservation isn't
+        // reversible in InventoryService – so a partial failure here is surfaced as an error and
         // the order stays in Paid, ready to retry once whatever caused the failure is fixed.
         foreach (var item in order.Items)
         {

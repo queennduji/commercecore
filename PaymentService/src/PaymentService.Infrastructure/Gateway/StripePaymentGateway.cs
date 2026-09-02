@@ -8,7 +8,7 @@ namespace PaymentService.Infrastructure.Gateway;
 /// <summary>
 /// Real Stripe test-mode integration via PaymentIntents. paymentMethodId is expected to be one of
 /// Stripe's built-in test PaymentMethod ids (e.g. "pm_card_visa" always succeeds,
-/// "pm_card_visa_chargeDeclined" always declines) — the officially documented way to exercise the
+/// "pm_card_visa_chargeDeclined" always declines) – the officially documented way to exercise the
 /// PaymentIntents API server-to-server without a Stripe.js/Elements frontend actually collecting a
 /// card. See https://docs.stripe.com/testing.
 /// </summary>
@@ -19,7 +19,7 @@ public class StripePaymentGateway : IPaymentGateway
     public StripePaymentGateway(IOptions<StripeOptions> options, IHttpClientFactory httpClientFactory)
     {
         // Constructing a StripeClient does no network I/O itself, so this doesn't need the
-        // lazy-factory-delegate pattern used for MinIO/Redis — resolving IOptions<StripeOptions>
+        // lazy-factory-delegate pattern used for MinIO/Redis – resolving IOptions<StripeOptions>
         // here, inside the constructor, already happens after the DI container (and any test
         // config overrides) is fully built.
         //
@@ -65,7 +65,7 @@ public class StripePaymentGateway : IPaymentGateway
         catch (StripeException ex)
         {
             // A declined test card (e.g. pm_card_visa_chargeDeclined) surfaces as a StripeException
-            // here rather than a non-succeeded PaymentIntent status — this is expected, not a bug.
+            // here rather than a non-succeeded PaymentIntent status – this is expected, not a bug.
             return new GatewayChargeResult(false, null, ex.StripeError?.Message ?? ex.Message);
         }
     }

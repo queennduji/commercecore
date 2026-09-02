@@ -75,7 +75,7 @@ public class CatalogApiFixture : IAsyncLifetime
 
         // The test host (WebApplicationFactory) and this test class both run on the same
         // machine as the test process, not inside a container, so there's no internal-vs-public
-        // endpoint split here like the real docker-compose deployment has — both point at the
+        // endpoint split here like the real docker-compose deployment has – both point at the
         // same Testcontainers-assigned host-reachable address.
         MinioPublicEndpoint = StripScheme(_minio.GetConnectionString());
         MinioAccessKey = _minio.GetAccessKey();
@@ -102,7 +102,7 @@ public class CatalogApiFixture : IAsyncLifetime
                     ["Minio:UseSSL"] = "false",
                     ["Redis:ConnectionString"] = _redis.GetConnectionString(),
                     ["Redis:DefaultTtlSeconds"] = "300",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "CatalogService.Tests",

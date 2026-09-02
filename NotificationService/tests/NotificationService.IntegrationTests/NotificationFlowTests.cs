@@ -13,8 +13,8 @@ namespace NotificationService.IntegrationTests;
 /// <summary>
 /// Proves the cross-service, event-driven flow end to end: real Avro messages are published onto
 /// auth.user-registered.v1 and order.paid.v1 (the same producer/schema shapes AuthenticationService
-/// and OrderService use), and this service's own consumers — already running inside the
-/// WebApplicationFactory host — are left to pick them up on their own, with no direct call into
+/// and OrderService use), and this service's own consumers – already running inside the
+/// WebApplicationFactory host – are left to pick them up on their own, with no direct call into
 /// the application under test. Mirrors ShippingService's OrderPaidConsumerTests.
 /// </summary>
 [Collection("NotificationApi")]
@@ -46,7 +46,7 @@ public class NotificationFlowTests
 
         await PublishUserRegisteredAsync(userId, email);
         // Give the contact-recording consumer a moment to land before the order.paid.v1 message
-        // arrives — otherwise this is a legitimate race this platform accepts (see README: the
+        // arrives – otherwise this is a legitimate race this platform accepts (see README: the
         // handler records a Failed/no-known-email notification rather than erroring, and a later
         // notification for the same order would still succeed).
         await Task.Delay(TimeSpan.FromSeconds(2));

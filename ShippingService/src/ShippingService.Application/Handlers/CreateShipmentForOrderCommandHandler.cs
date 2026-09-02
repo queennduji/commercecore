@@ -23,7 +23,7 @@ public class CreateShipmentForOrderCommandHandler : IRequestHandler<CreateShipme
         if (existing is not null)
         {
             // Idempotent: Kafka's at-least-once delivery can dispatch this command more than once
-            // for the same order — treat an existing shipment as success rather than violating the
+            // for the same order – treat an existing shipment as success rather than violating the
             // one-shipment-per-order unique index.
             return ServiceResult<ShipmentDto>.Success(existing.ToDto());
         }

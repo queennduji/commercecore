@@ -12,7 +12,7 @@ services:
       Jwt__Key: "Kdr6AN7udG2fwt8TzqU7/lE37acTGV6PPlagtn5GusM="
       Jwt__Issuer: "CommerceCore.AuthenticationService"
       Jwt__Audience: "CommerceCore"
-      # Overrides appsettings.Development.json's localhost destinations — inside the Docker
+      # Overrides appsettings.Development.json's localhost destinations – inside the Docker
       # network, backend services are reached by their compose service name on their internal
       # container port (8080), not the host-mapped ports used for local `dotnet run`.
       ReverseProxy__Clusters__auth-cluster__Destinations__d1__Address: "http://authentication-service:8080"
@@ -25,7 +25,7 @@ services:
       ReverseProxy__Clusters__notification-cluster__Destinations__d1__Address: "http://notification-service:8080"
       # Traces go straight to Jaeger's native OTLP endpoint; logs go to the logs-only OTel
       # Collector that fans out to Elasticsearch. Both containers listen on the standard OTLP
-      # port 4317 internally — see the root docker-compose.yml comments for why the host-side
+      # port 4317 internally – see the root docker-compose.yml comments for why the host-side
       # port mappings differ (4317 vs 4327) even though these in-network addresses don't.
       Otel__TracesEndpoint: "http://jaeger:4317"
       Otel__LogsEndpoint: "http://otel-collector:4317"

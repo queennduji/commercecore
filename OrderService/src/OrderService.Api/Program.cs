@@ -14,10 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 var otelOptions = builder.Configuration.GetSection(OtelOptions.SectionName).Get<OtelOptions>()
     ?? throw new InvalidOperationException("Otel configuration section is missing.");
 
-// Traces and logs go to two different backends — see OtelOptions. AddHttpClientInstrumentation
+// Traces and logs go to two different backends – see OtelOptions. AddHttpClientInstrumentation
 // covers this service's own outbound calls to Cart/Inventory/Payment/Shipping services, so the
 // checkout saga shows up as one connected distributed trace, and every inbound request gets a
-// server span via AddAspNetCoreInstrumentation — same reference pattern used by every service in
+// server span via AddAspNetCoreInstrumentation – same reference pattern used by every service in
 // this platform, first established in ApiGateway.
 builder.Logging.AddOpenTelemetry(logging =>
 {

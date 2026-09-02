@@ -12,10 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 var otelOptions = builder.Configuration.GetSection(OtelOptions.SectionName).Get<OtelOptions>()
     ?? throw new InvalidOperationException("Otel configuration section is missing.");
 
-// Traces and logs deliberately go to two different backends — see OtelOptions — so this is two
+// Traces and logs deliberately go to two different backends – see OtelOptions – so this is two
 // separate OTLP exporters, not one shared endpoint. Every downstream YARP proxy call also gets
 // an outbound span from AddHttpClientInstrumentation() below, since YARP's forwarder runs on the
-// standard .NET HttpClient machinery that instrumentation patches — a gateway->backend hop shows
+// standard .NET HttpClient machinery that instrumentation patches – a gateway->backend hop shows
 // up in the trace the same as any other service's outbound HTTP call.
 builder.Logging.AddOpenTelemetry(logging =>
 {
@@ -36,7 +36,7 @@ builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// Storefront's cart calls (anonymous by design — browsing/guest-cart routes) go straight from
+// Storefront's cart calls (anonymous by design – browsing/guest-cart routes) go straight from
 // the browser to the gateway instead of through Storefront's own server, so those origins need
 // an explicit CORS allow. No credentials mode: nothing here relies on cookies crossing origins,
 // only a plain Authorization header on authenticated calls, which AllowAnyHeader covers.
@@ -55,7 +55,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Fixed-window, per-client-IP global limit — applies to every route (including /health and
+// Fixed-window, per-client-IP global limit – applies to every route (including /health and
 // unauthenticated requests to protected routes) since abuse doesn't stop at auth. Read lazily
 // from IConfiguration for the same test-host-override reason as the JWT options below.
 builder.Services.AddRateLimiter(options =>
@@ -92,7 +92,7 @@ builder.Services
 
 // Resolved lazily from IConfiguration at options-creation time (not eagerly from
 // builder.Configuration) so test hosts that layer config overrides via
-// WebApplicationFactory.ConfigureAppConfiguration see the overridden values — same pattern
+// WebApplicationFactory.ConfigureAppConfiguration see the overridden values – same pattern
 // used by every other service's JWT setup in this platform.
 builder.Services
     .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -114,13 +114,13 @@ builder.Services
     });
 
 // "RequireAuthenticatedUser" is applied per-route via the ReverseProxy:Routes config, only on
-// the four fully-protected downstream services (Order/Payment/Shipping/Notification — those
+// the four fully-protected downstream services (Order/Payment/Shipping/Notification – those
 // controllers are blanket [Authorize] with no anonymous actions). Auth/Catalog/Inventory/Cart
 // routes carry no AuthorizationPolicy here and stay pass-through: those controllers have
 // per-action [AllowAnonymous]/[Authorize] mixes (e.g. browsing products, guest carts, register/
 // login), and blanket gateway enforcement there would incorrectly block requests that are
 // legitimately anonymous today. Each downstream service still validates independently either
-// way — this policy only decides whether the gateway itself rejects before proxying.
+// way – this policy only decides whether the gateway itself rejects before proxying.
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAuthenticatedUser", policy => policy.RequireAuthenticatedUser());
@@ -128,7 +128,7 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-// Ahead of auth deliberately — a client hammering a protected route with no/bad tokens should
+// Ahead of auth deliberately – a client hammering a protected route with no/bad tokens should
 // still get rate-limited, not exempted because every request fails auth first.
 app.UseRateLimiter();
 

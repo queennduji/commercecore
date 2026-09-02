@@ -87,7 +87,7 @@ public class OrderEndpointsTests
         Assert.Equal("Paid", paid!.Status);
         Assert.Contains(_fixture.PaymentServiceClient.Charges, c => c.OrderId == order.Id && c.Amount == 20m && c.PaymentMethodId == "pm_card_visa");
 
-        // Ship/Deliver are no longer HTTP endpoints — they're driven by consuming ShippingService's
+        // Ship/Deliver are no longer HTTP endpoints – they're driven by consuming ShippingService's
         // shipment.dispatched.v1/shipment.delivered.v1 events, so this test publishes real Avro
         // messages onto those topics (same shape ShippingService's own producer uses) and polls the
         // order until OrderService's own consumers pick them up and advance the status, proving the

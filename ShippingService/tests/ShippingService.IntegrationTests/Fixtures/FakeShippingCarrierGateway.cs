@@ -2,7 +2,7 @@ using ShippingService.Application.Interfaces;
 
 namespace ShippingService.IntegrationTests.Fixtures;
 
-/// <summary>Stands in for a real EasyPost account — same reasoning as PaymentService's
+/// <summary>Stands in for a real EasyPost account – same reasoning as PaymentService's
 /// FakePaymentGateway. Defaults to succeeding every create/retrieve call; tests can add a
 /// tracking code to <see cref="DeclinedTrackingCodes"/> to force a creation failure, and control
 /// what RetrieveTrackerAsync reports back via <see cref="StatusByProviderTrackerId"/>.</summary>

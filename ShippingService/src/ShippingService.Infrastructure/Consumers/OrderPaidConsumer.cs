@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 namespace ShippingService.Infrastructure.Consumers;
 
 /// <summary>
-/// Subscribes to OrderService's order.paid.v1 topic (owned by OrderService — this service only
+/// Subscribes to OrderService's order.paid.v1 topic (owned by OrderService – this service only
 /// consumes it, never publishes to it) and auto-creates a Shipment for the paid order, keeping the
 /// two services decoupled via events instead of a direct HTTP call from Order into Shipping. This
 /// is also what makes OrderService's own former "ship"/"deliver" ops endpoints obsolete: fulfillment
@@ -105,8 +105,8 @@ public class OrderPaidConsumer : BackgroundService
             {
                 // A single malformed/invalid message (e.g. one published before shippingAddress was
                 // added to this schema, so it deserializes with an empty string and fails
-                // validation) must not take the whole consumer — and by extension this host process,
-                // since HostOptions.BackgroundServiceExceptionBehavior defaults to StopHost — down
+                // validation) must not take the whole consumer – and by extension this host process,
+                // since HostOptions.BackgroundServiceExceptionBehavior defaults to StopHost – down
                 // with it. Logged and skipped; the offset still advances since EnableAutoCommit is on.
                 _logger.LogError(ex, "Failed to process a message from {Topic}", _options.OrderPaidTopic);
             }

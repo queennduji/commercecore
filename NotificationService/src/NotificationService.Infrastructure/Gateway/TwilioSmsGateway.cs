@@ -9,7 +9,7 @@ using Twilio.Types;
 namespace NotificationService.Infrastructure.Gateway;
 
 /// <summary>Real Twilio integration. Mirrors ResendEmailGateway/StripePaymentGateway/
-/// EasyPostShippingCarrierGateway's role — the Application layer never depends on the Twilio SDK
+/// EasyPostShippingCarrierGateway's role – the Application layer never depends on the Twilio SDK
 /// directly. Twilio's client is a process-wide static (TwilioClient.Init), so construction here is
 /// idempotent even though this gateway is registered scoped like the others.</summary>
 public class TwilioSmsGateway : ISmsGateway

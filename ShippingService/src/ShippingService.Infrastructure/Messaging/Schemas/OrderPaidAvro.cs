@@ -4,7 +4,7 @@ using Avro.Specific;
 namespace ShippingService.Infrastructure.Messaging.Schemas;
 
 /// <summary>Mirrors OrderService's OrderPaidAvro exactly (same schema, field-for-field) so this
-/// service's consumer can deserialize order.paid.v1 messages — ShippingService only consumes this
+/// service's consumer can deserialize order.paid.v1 messages – ShippingService only consumes this
 /// topic, it does not own it or publish to it.</summary>
 public class OrderPaidAvro : ISpecificRecord
 {

@@ -1,10 +1,10 @@
-# Production deployment — runs the CommerceCore backend on a single VM, co-located alongside
+# Production deployment – runs the CommerceCore backend on a single VM, co-located alongside
 # other unrelated services on the same box. This is a standalone, self-contained stack: unlike the
 # per-service docker-compose.yml files (which join an `external: true` "commercecore" network
 # created by the root docker-compose.yml), this file defines that network itself, since it's the
 # only compose project on this box that needs it.
 #
-# Only api-gateway (8080) and minio (9000) publish host ports — everything else is reachable
+# Only api-gateway (8080) and minio (9000) publish host ports – everything else is reachable
 # only from other containers on the commercecore network. nginx (outside Docker, already running
 # on this VM) reverse-proxies api.commercecore.app -> localhost:8080 and
 # media.commercecore.app -> localhost:9000; see deploy/nginx/*.conf.

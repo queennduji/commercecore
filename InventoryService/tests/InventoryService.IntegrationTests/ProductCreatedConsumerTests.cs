@@ -14,7 +14,7 @@ namespace InventoryService.IntegrationTests;
 /// Proves the cross-service, event-driven provisioning flow end to end: a real Avro message is
 /// published onto catalog.product-created.v1 (the topic CatalogService owns) using the same
 /// producer/schema shape CatalogService uses, and this service's own ProductCreatedConsumer
-/// BackgroundService — already running inside the WebApplicationFactory host — is left to pick it
+/// BackgroundService – already running inside the WebApplicationFactory host – is left to pick it
 /// up and provision inventory on its own, with no direct call into the application under test.
 /// </summary>
 [Collection("InventoryApi")]

@@ -14,7 +14,7 @@ public class KafkaOptions
     public string OrderCancelledTopic { get; set; } = "order.cancelled.v1";
     public string OrderRefundedTopic { get; set; } = "order.refunded.v1";
 
-    // Topics owned by ShippingService that this service only consumes — these are what now drive
+    // Topics owned by ShippingService that this service only consumes – these are what now drive
     // Order.Status Paid->Shipped->Delivered, replacing the old manual ship/deliver ops endpoints.
     public string ShipmentDispatchedTopic { get; set; } = "shipment.dispatched.v1";
     public string ShipmentDispatchedConsumerGroupId { get; set; } = "order-service.shipment-dispatched-consumer";

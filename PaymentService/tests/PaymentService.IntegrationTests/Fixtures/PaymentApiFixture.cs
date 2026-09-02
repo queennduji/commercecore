@@ -78,10 +78,10 @@ public class PaymentApiFixture : IAsyncLifetime
                     ["Jwt:Key"] = JwtKey,
                     ["Jwt:Issuer"] = JwtIssuer,
                     ["Jwt:Audience"] = JwtAudience,
-                    // Deliberately left unset — the fake gateway swapped in below never touches
+                    // Deliberately left unset – the fake gateway swapped in below never touches
                     // Stripe, so no real key is needed to run this suite.
                     ["Stripe:SecretKey"] = "sk_test_fake_not_used",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "PaymentService.Tests",

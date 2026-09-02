@@ -1,6 +1,6 @@
 namespace NotificationService.Infrastructure.Options;
 
-/// <summary>NotificationService owns no topics of its own — it's a pure terminal consumer (there's
+/// <summary>NotificationService owns no topics of its own – it's a pure terminal consumer (there's
 /// nothing downstream that needs to react to "a notification was sent"), so this only lists
 /// topics owned by other services that this service consumes.</summary>
 public class KafkaOptions

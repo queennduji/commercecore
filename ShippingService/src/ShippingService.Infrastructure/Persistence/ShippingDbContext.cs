@@ -24,7 +24,7 @@ public class ShippingDbContext : DbContext
             entity.Property(s => s.TrackingNumber).HasMaxLength(100);
             entity.Property(s => s.ProviderTrackerId).HasMaxLength(100);
             entity.Property(s => s.ExceptionReason).HasMaxLength(500);
-            // One shipment per order (the granularity decision for this platform — see README).
+            // One shipment per order (the granularity decision for this platform – see README).
             entity.HasIndex(s => s.OrderId).IsUnique();
             entity.HasIndex(s => s.UserId);
         });

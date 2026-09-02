@@ -35,7 +35,7 @@ public static class DependencyInjection
 
         // Resolved lazily from IOptions<MinioOptions> when IMinioClient is first requested (not
         // eagerly here), so test hosts that layer config overrides via
-        // WebApplicationFactory.ConfigureAppConfiguration see the overridden values — same
+        // WebApplicationFactory.ConfigureAppConfiguration see the overridden values – same
         // reasoning as the JWT lazy-binding fix in Program.cs.
         services.AddSingleton<IMinioClient>(sp =>
         {

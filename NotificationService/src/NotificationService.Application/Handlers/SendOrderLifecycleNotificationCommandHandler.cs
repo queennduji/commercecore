@@ -36,7 +36,7 @@ public class SendOrderLifecycleNotificationCommandHandler : IRequestHandler<Send
         if (contact is null || (contact.Email is null && contact.PhoneNumber is null))
         {
             // No known contact for this user on any channel (e.g. auth.user-registered.v1 hasn't
-            // been consumed yet, or arrived after this event somehow) — still recorded for audit,
+            // been consumed yet, or arrived after this event somehow) – still recorded for audit,
             // same record-every-attempt reasoning as Payment/Shipment. Channel is a nominal
             // Email placeholder since there's no real channel to attribute this attempt to.
             var (missingSubject, missingBody) = NotificationTemplate.Render(request.Type, request.OrderId, request.Detail);
@@ -59,7 +59,7 @@ public class SendOrderLifecycleNotificationCommandHandler : IRequestHandler<Send
         }
 
         // A user with both an email and a phone on file gets two Notification rows for the same
-        // event — one per channel — rather than one row trying to describe two outcomes. The
+        // event – one per channel – rather than one row trying to describe two outcomes. The
         // command still returns a single DTO (whichever channel succeeded, preferring the first
         // one tried); the full picture across channels is what GET /api/notifications/me is for.
         NotificationDto? succeededDto = null;

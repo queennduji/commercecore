@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "InventoryService",
-    "description": "CommerceCore InventoryService — locations, stock adjustments, and reservations against the Docker container. Includes an Auth folder that logs into AuthenticationService (also via Docker) to obtain the bearer token this service's write endpoints require, and a Kafka folder note explaining the auto-provisioning flow from CatalogService.",
+    "description": "CommerceCore InventoryService – locations, stock adjustments, and reservations against the Docker container. Includes an Auth folder that logs into AuthenticationService (also via Docker) to obtain the bearer token this service's write endpoints require, and a Kafka folder note explaining the auto-provisioning flow from CatalogService.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -207,7 +207,7 @@
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"delta\": 50,\n  \"reason\": \"initial stock\"\n}"
             },
-            "description": "productId can be any GUID for manual testing — set it to a real product from CatalogService, or paste a fresh GUID here (a new inventory record is upserted automatically)."
+            "description": "productId can be any GUID for manual testing – set it to a real product from CatalogService, or paste a fresh GUID here (a new inventory record is upserted automatically)."
           },
           "event": [
             {
@@ -343,7 +343,7 @@
           "request": {
             "method": "POST",
             "url": { "raw": "{{baseUrl}}/api/inventory/reservations/{{reservationId}}/commit", "host": ["{{baseUrl}}"], "path": ["api", "inventory", "reservations", "{{reservationId}}", "commit"] },
-            "description": "Marks the reservation fulfilled and actually removes the stock (decrements both OnHand and Reserved). Only one of Release/Commit can succeed per reservation — re-run 'Reserve' if you already used the other."
+            "description": "Marks the reservation fulfilled and actually removes the stock (decrements both OnHand and Reserved). Only one of Release/Commit can succeed per reservation – re-run 'Reserve' if you already used the other."
           },
           "event": [
             {

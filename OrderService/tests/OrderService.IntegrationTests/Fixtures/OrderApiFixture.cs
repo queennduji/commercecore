@@ -88,7 +88,7 @@ public class OrderApiFixture : IAsyncLifetime
                     ["CartService:BaseUrl"] = "http://cart-service.invalid",
                     ["InventoryService:BaseUrl"] = "http://inventory-service.invalid",
                     ["PaymentService:BaseUrl"] = "http://payment-service.invalid",
-                    // Never actually reached in tests — OTLP export failures are non-fatal at
+                    // Never actually reached in tests – OTLP export failures are non-fatal at
                     // runtime, so a real collector isn't needed here. Only present because Otel
                     // config is required at startup, same as Jwt above.
                     ["Otel:ServiceName"] = "OrderService.Tests",

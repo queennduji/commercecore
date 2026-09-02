@@ -7,11 +7,11 @@ using Microsoft.Extensions.Options;
 namespace ShippingService.Infrastructure.Gateway;
 
 /// <summary>Real EasyPost integration, test mode. Deliberately never purchases a real shipping
-/// label or address-validates — this platform doesn't model parcel weight/dimensions or
+/// label or address-validates – this platform doesn't model parcel weight/dimensions or
 /// structured addresses, so the only real API surface exercised is the Tracker resource: creating
 /// a tracker from a tracking code (EasyPost's own test codes like EZ2000000002 simulate real
 /// carrier tracking behavior end to end) and polling it for status. Mirrors StripePaymentGateway's
-/// role in PaymentService — the Application layer never depends on the EasyPost SDK directly.</summary>
+/// role in PaymentService – the Application layer never depends on the EasyPost SDK directly.</summary>
 public class EasyPostShippingCarrierGateway : IShippingCarrierGateway
 {
     private readonly Client _client;

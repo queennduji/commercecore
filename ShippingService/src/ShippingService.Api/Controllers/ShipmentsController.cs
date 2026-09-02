@@ -35,7 +35,7 @@ public class ShipmentsController : ControllerBase
         return result.Succeeded ? Ok(result.Value) : NotFound(new { errors = result.Errors });
     }
 
-    // Ops actions — gated to fulfillment/admin staff via role, not an ownership check (these
+    // Ops actions – gated to fulfillment/admin staff via role, not an ownership check (these
     // aren't a customer acting on their own shipment). Previously any authenticated caller could
     // reach these, back when no role system existed yet.
     [HttpPost("{id:guid}/dispatch")]

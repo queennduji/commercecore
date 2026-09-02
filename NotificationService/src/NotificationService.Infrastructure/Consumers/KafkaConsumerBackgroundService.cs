@@ -12,7 +12,7 @@ namespace NotificationService.Infrastructure.Consumers;
 /// <summary>
 /// Generic Kafka topic consumer, factored out because this service subscribes to eight different
 /// topics across three other services (every other service in this platform tops out at one or
-/// two consumers) — writing that ConsumeLoop by hand eight times would mean eight chances to
+/// two consumers) – writing that ConsumeLoop by hand eight times would mean eight chances to
 /// forget the exception-resilience fix ShippingService's OrderPaidConsumer needed after a live
 /// smoke test proved a single malformed message can crash the whole host (see git history).
 /// Concrete subclasses only supply the topic/group id and what to do with a deserialized message.
@@ -50,7 +50,7 @@ public abstract class KafkaConsumerBackgroundService<TAvro> : BackgroundService
         });
     }
 
-    /// <summary>Handle one deserialized message. Throwing here is safe — the loop logs and moves
+    /// <summary>Handle one deserialized message. Throwing here is safe – the loop logs and moves
     /// on rather than crashing the host; validate/parse defensively but don't worry about a stray
     /// exception taking the process down.</summary>
     protected abstract Task HandleAsync(TAvro message, IServiceProvider scopedServices, CancellationToken cancellationToken);
@@ -102,9 +102,9 @@ public abstract class KafkaConsumerBackgroundService<TAvro> : BackgroundService
             }
             catch (Exception ex)
             {
-                // A single malformed/invalid message must not take the whole consumer — and by
+                // A single malformed/invalid message must not take the whole consumer – and by
                 // extension this host process, since HostOptions.BackgroundServiceExceptionBehavior
-                // defaults to StopHost — down with it. Logged and skipped.
+                // defaults to StopHost – down with it. Logged and skipped.
                 _logger.LogError(ex, "Failed to process a message from {Topic}", _topic);
             }
         }

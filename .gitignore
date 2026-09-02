@@ -23,7 +23,7 @@ kafka-data/
 .postman/
 **/postman/globals/
 
-## Local secrets (e.g. PaymentService's Stripe test key) — never committed
+## Local secrets (e.g. PaymentService's Stripe test key) – never committed
 .env
 .env.*
 !.env.example

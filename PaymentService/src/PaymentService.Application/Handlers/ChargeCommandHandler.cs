@@ -58,7 +58,7 @@ public class ChargeCommandHandler : IRequestHandler<ChargeCommand, ServiceResult
 
         var now = DateTime.UtcNow;
 
-        // A Payment row is recorded either way — Succeeded or Failed — so there's always an audit
+        // A Payment row is recorded either way – Succeeded or Failed – so there's always an audit
         // trail of the attempt, not just of successful charges.
         var payment = new Payment
         {

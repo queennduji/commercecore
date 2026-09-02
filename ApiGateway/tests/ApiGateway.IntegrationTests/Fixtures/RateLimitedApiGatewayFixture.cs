@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 namespace ApiGateway.IntegrationTests.Fixtures;
 
 /// <summary>A separate WebApplicationFactory instance (and therefore a separate, isolated
-/// rate-limiter state) from <see cref="ApiGatewayFixture"/> — sharing one instance across every
+/// rate-limiter state) from <see cref="ApiGatewayFixture"/> – sharing one instance across every
 /// test in the assembly would make rate-limit tests order-dependent on however many requests
 /// earlier tests happened to send. Configured with a deliberately tiny PermitLimit so a single
 /// test can exhaust it without sending hundreds of requests.</summary>

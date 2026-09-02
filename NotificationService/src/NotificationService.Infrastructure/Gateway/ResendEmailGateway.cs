@@ -6,7 +6,7 @@ using Resend;
 namespace NotificationService.Infrastructure.Gateway;
 
 /// <summary>Real Resend integration. Mirrors StripePaymentGateway/EasyPostShippingCarrierGateway's
-/// role — the Application layer never depends on the Resend SDK directly.</summary>
+/// role – the Application layer never depends on the Resend SDK directly.</summary>
 public class ResendEmailGateway : IEmailGateway
 {
     private readonly IResend _client;

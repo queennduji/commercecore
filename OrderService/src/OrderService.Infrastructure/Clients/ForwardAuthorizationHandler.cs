@@ -8,7 +8,7 @@ namespace OrderService.Infrastructure.Clients;
 /// through this handler. InventoryService's write endpoints (reserve/release/commit) require a
 /// valid JWT, and since the shared symmetric key/issuer/audience is trusted across every service
 /// in this project, forwarding the caller's own token is the natural way for OrderService to act
-/// "on behalf of" the shopper it's checking out — no separate service-account token needed.
+/// "on behalf of" the shopper it's checking out – no separate service-account token needed.
 /// </summary>
 public class ForwardAuthorizationHandler : DelegatingHandler
 {

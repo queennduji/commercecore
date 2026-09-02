@@ -48,7 +48,7 @@ public class RefreshShipmentTrackingCommandHandler : IRequestHandler<RefreshShip
         if (mappedStatus is null || mappedStatus == shipment.Status)
         {
             // Either an unrecognized/"unknown" carrier status (nothing to reflect) or no actual
-            // transition — either way, not an error, and no duplicate event to publish.
+            // transition – either way, not an error, and no duplicate event to publish.
             return ServiceResult<ShipmentDto>.Success(shipment.ToDto());
         }
 

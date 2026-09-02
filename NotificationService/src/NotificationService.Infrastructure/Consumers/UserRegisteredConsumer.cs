@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace NotificationService.Infrastructure.Consumers;
 
-/// <summary>Subscribes to AuthenticationService's auth.user-registered.v1 — the sole source for
+/// <summary>Subscribes to AuthenticationService's auth.user-registered.v1 – the sole source for
 /// this service's local userId -> email lookup table.</summary>
 public class UserRegisteredConsumer : KafkaConsumerBackgroundService<UserRegisteredAvro>
 {

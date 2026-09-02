@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <!-- FakeBackendServer spins up a real (socket-listening) minimal WebApplication of its own
-         to stand in for a backend microservice — that needs the ASP.NET Core shared framework
+         to stand in for a backend microservice – that needs the ASP.NET Core shared framework
          directly, beyond what Microsoft.AspNetCore.Mvc.Testing alone pulls in. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

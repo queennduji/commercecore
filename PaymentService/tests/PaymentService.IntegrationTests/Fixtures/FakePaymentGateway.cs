@@ -2,7 +2,7 @@ using PaymentService.Application.Interfaces;
 
 namespace PaymentService.IntegrationTests.Fixtures;
 
-/// <summary>Stands in for Stripe — no real Stripe account is needed to run this test suite.
+/// <summary>Stands in for Stripe – no real Stripe account is needed to run this test suite.
 /// Defaults to succeeding every charge/refund; tests can add a paymentMethodId to
 /// <see cref="DeclinedPaymentMethodIds"/> or a providerReference to
 /// <see cref="RefundFailureProviderReferences"/> to force a decline/refund failure and assert the
